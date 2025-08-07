@@ -1,0 +1,230 @@
+/* Global styles for CRM UI - Light + Dark (light default) */
+
+/* 1) CSS Variables (Themes) */
+:root {
+  /* Palette from image (exact hex): */
+  --pal-bg: #FAFAFA;   /* lighter near-white */
+  --pal-beige: #C8B7A6; /* column A */
+  --pal-blue:  #7D94B5; /* reserved */
+  --pal-pink:  #C29591; /* column B */
+  --pal-brown: #703F37; /* column accent/borders if needed */
+  --pal-green: #B6C199; /* CARD COLOR (requested) */
+
+  /* Apply across UI */
+  --bg: var(--pal-bg);
+  --panel: #F4F4F1; /* columns same as background (RAL 9010) */
+  --border: rgba(0,0,0,.08);
+  --text: #262626;
+  --muted: #6b7280;
+
+  --primary: var(--pal-blue);
+  --primary-contrast: #ffffff;
+
+  /* Card (deal) color) — new: #fff6df */
+  --card-base: #fff6df;
+
+  /* Column backgrounds (we'll rotate these) */
+  --col-1: var(--pal-beige); /* #C8B7A6 */
+  --col-2: var(--pal-pink);  /* #C29591 */
+  --col-3: var(--pal-beige); /* alternate */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-md: 0 8px 20px rgba(0,0,0,0.08);
+
+  /* Further compact sizing (shrink more as requested) */
+  --gap-1: 3px;
+  --gap-2: 5px;
+  --gap-3: 8px;
+  --gap-4: 12px;
+  --gap-6: 18px;
+
+  /* WIDTH SCALE: shrink ~35% for columns/cards (from 320 baseline) */
+  --kanban-col-w: 208px; /* 320 * 0.65 ≈ 208 */
+}
+
+/* Dark theme */
+html[data-theme="dark"] {
+  --bg: #0b0f17;
+  --panel: #0f172a;
+  --border: #1f2937;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --primary: #60a5fa;
+  --primary-contrast: #0b0f17;
+
+  /* Ensure cards match columns/background tone in dark mode */
+  --card-base: var(--panel);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.25);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.35);
+}
+/* In dark theme, make cards equal to panel/background tone for visual consistency */
+html[data-theme="dark"] .card {
+  background: var(--panel);
+  border-color: #243244;
+}
+
+/* 2) Base reset */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 3) Layout helpers */
+.container {
+  padding: var(--gap-4);
+}
+
+.topnav {
+  margin-bottom: var(--gap-3);
+}
+
+.link-primary {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.link-primary:hover { text-decoration: underline; }
+
+/* 4) Cards, panels, badges, empty/error */
+.panel {
+  /* Top summary cards also use .panel class — shrink visual size by scaling padding/font without changing gaps */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transform: scale(0.7);              /* ~30% smaller visual area */
+  transform-origin: top left;         /* keep position to preserve gaps */
+}
+
+.card {
+  /* Light mode: use card-base (#fff6df) softened; Dark mode: overridden below to match panel */
+  background: color-mix(in srgb, var(--card-base) 92%, #ffffff 8%);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: calc(var(--gap-3) - 1px);
+}
+/* In dark theme, make cards equal to panel/background tone for visual consistency */
+html[data-theme="dark"] .card {
+  background: var(--panel);
+  border-color: #243244;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: transparent;
+}
+.badge.success { color: #16a34a; border-color: rgba(22,163,74,.3); }
+.badge.warn { color: #ca8a04; border-color: rgba(202,138,4,.35); }
+.badge.info { color: var(--primary); border-color: rgba(37,99,235,.35); }
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: var(--gap-6);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+}
+
+.error {
+  color: #b91c1c;
+  background: rgba(185,28,28,.05);
+  border: 1px solid rgba(185,28,28,.25);
+  border-radius: var(--radius-md);
+  padding: var(--gap-3);
+}
+
+/* 5) Kanban skeleton */
+.kanban {
+  display: flex;
+  gap: var(--gap-3); /* keep spacing to avoid crowding */
+  overflow-x: auto;
+  padding-bottom: var(--gap-2);
+}
+.kanban-col {
+  min-width: var(--kanban-col-w);
+  max-width: var(--kanban-col-w);
+  background: var(--panel) !important; /* columns = RAL 9010 */
+  border: 1px solid rgba(0,0,0,.05);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+/* Force all columns same as background (RAL 9010) */
+.kanban-col:nth-child(2n)   { background: var(--panel) !important; }
+.kanban-col:nth-child(2n+1){ background: var(--panel) !important; }
+.kanban-col .col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gap-2) var(--gap-3);
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(2px);
+}
+.kanban-col .col-body {
+  padding: var(--gap-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-2);
+}
+/* (Removed 3-tone rotation; replaced by strict 2-tone A/B above) */
+
+/* 6) DealDetail layout */
+.deal-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--gap-4);
+}
+@media (max-width: 920px) {
+  .deal-layout { grid-template-columns: 1fr; }
+}
+
+/* 7) Timeline */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-3);
+}
+.timeline-item {
+  display: grid;
+  grid-template-columns: 96px 1fr; /* smaller */
+  gap: var(--gap-2);
+  align-items: start;
+}
+.timeline-date {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* 8) Utilities */
+.text-muted { color: var(--muted); }
+/* Additional compact typography (~10-15% smaller) while keeping readability */
+.text-sm { font-size: 9.5px; }
+.text-md { font-size: 11px; }
+.text-lg { font-size: 14px; font-weight: 700; }
+
+.mt-2 { margin-top: var(--gap-2); }
+.mt-3 { margin-top: var(--gap-3); }
+.mt-4 { margin-top: var(--gap-4); }
+
+/* Simple theme toggle helper (optional JS can flip data-theme) */

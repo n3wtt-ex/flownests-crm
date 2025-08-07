@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  db:
+    image: public.ecr.aws/supabase/postgres:17.4.1.068
+    container_name: supabase_db_crm
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "54325:5432"
+    volumes:
+      - supabase_db_crm_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  kong:
+    image: public.ecr.aws/supabase/kong:2.8.1
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "54321:8000"
+
+volumes:
+  supabase_db_crm_data:

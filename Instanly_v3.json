@@ -1,0 +1,389 @@
+{
+  "name": "Instanly_v3",
+  "nodes": [
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Loop Over Leads",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        832,
+        160
+      ],
+      "id": "5dc21a86-f0e3-4f2d-91c0-dc0b55c9df4f"
+    },
+    {
+      "parameters": {
+        "resource": "lead",
+        "operation": "addToCampaign",
+        "campaign": {
+          "__rl": true,
+          "value": "={{ $json.campaign_id }}",
+          "mode": "id"
+        },
+        "email": "={{ $json.emailAddress }}",
+        "firstName": "={{ $json.firstName }}",
+        "lastName": "={{ $json.lastName }}",
+        "customFields": {
+          "customFieldValues": {
+            "field": [
+              {
+                "key": "Email Subject",
+                "value": "={{ $json.generated_subject }}"
+              },
+              {
+                "key": "body_step_1",
+                "value": "={{ $json.generated_body }}"
+              },
+              {
+                "key": "body_step_2",
+                "value": "={{ $json.generated_body_step2 }}"
+              },
+              {
+                "key": "body_step_3",
+                "value": "={{ $json.generated_body_step3 }}"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Add Lead to Campaign",
+      "type": "n8n-nodes-instantly.instantly",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        144
+      ],
+      "id": "97852ce2-14d4-40ee-9908-6851ccf6da5c",
+      "credentials": {
+        "instantlyApi": {
+          "id": "9ZqT2ialj2w9Sbhv",
+          "name": "Instantly account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE leads SET status = 'in_campaign' WHERE id = {{ $json.id }};",
+        "options": {}
+      },
+      "name": "Update Lead Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1264,
+        144
+      ],
+      "id": "644ea2de-07b8-4c27-b44e-9a15d2f8ec59",
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "scheduleName": "first",
+        "scheduleTimezone": "Europe/Istanbul",
+        "useAllEmailAccounts": true,
+        "additionalFields": {
+          "stopOnReply": true,
+          "sequenceSteps": {
+            "steps": {
+              "step": [
+                {
+                  "stepNumber": 1,
+                  "delay": 0,
+                  "subject": "={{ $json.generated_subject }}",
+                  "body": "={{ $json.generated_body }}"
+                },
+                {
+                  "stepNumber": 2,
+                  "delay": 2,
+                  "subject": "={{ $json.generated_subject }}",
+                  "body": "={{ $json.generated_body_step2 }}"
+                },
+                {
+                  "stepNumber": 3,
+                  "delay": 5,
+                  "subject": "={{ $json.generated_subject }}",
+                  "body": "={{ $json.generated_body_step3 }}"
+                }
+              ]
+            }
+          },
+          "autoVariantSelectTrigger": "reply_rate"
+        }
+      },
+      "name": "1. Create Campaign",
+      "type": "n8n-nodes-instantly.instantly",
+      "typeVersion": 1,
+      "position": [
+        352,
+        -48
+      ],
+      "id": "901f4769-6f31-4055-aa2d-9caf6064736d",
+      "executeOnce": true,
+      "credentials": {
+        "instantlyApi": {
+          "id": "9ZqT2ialj2w9Sbhv",
+          "name": "Instantly account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        176
+      ],
+      "id": "721aaf07-87dc-4660-8ad8-5a1453ccda7f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    \"firstName\": \"Nazma\",\n    \"lastName\": \"Qurban\",\n    \"jobTitle\": \"Head Of Sales\",\n    \"companyName\": \"Cognism\",\n    \"emailAddress\": \"yusuf1999-00@outlook.com\",\n    \"number\": \"+44 20 3858 0822\",\n    \"stage\": \"Cold\",\n    \"linkedInURL\": \"https://www.linkedin.com/in/nazmaqurban\",\n    \"websiteURL\": \"https://www.cognism.com\",\n    \"is_qualified\": true,\n    \"qualification_reason\": \"Nazma's LinkedIn activity, specifically her post 'Why you should take the dreaded cold call,' directly aligns with the challenges B2B sales automation (CoreMagnet's service) aims to solve, indicating a strong fit for improving outreach efficiency.\",\n    \"generated_subject\": \"Your insights on cold calling, Nazma\",\n    \"generated_body\": \"<html><body><p>Nazma,</p><p>I saw your insightful post on taking 'the dreaded cold call'. It got me thinking: what if you could dramatically cut down on that 'dreaded' part, by automating the initial outreach for your team at Flooencer?</p><p>We help B2B businesses like yours significantly boost conversion rates by using public data for hyper-personalized, automated campaigns.</p><p>Would you be open to a quick 2-minute video showing how this works?</p><p>Best,</p><p>Yusuf</p></body></html>\",\n    \"generated_subject_step2\": \"Re: Your insights on cold calling\",\n    \"generated_body_step2\": \"<html><body><p>Hi Nazma,</p><p>Just checking in on my last email regarding your post on cold calling and scaling outreach. Given your background in sales leadership, I imagine finding efficient ways to generate qualified leads is always top of mind.</p><p>Our sales automation solution is specifically designed to streamline those early stages, letting your team focus on high-value conversations rather than manual prospecting.</p><p>Any thoughts on how you're currently tackling this?</p><p>Regards,</p><p>Yusuf</p></body></html>\",\n    \"generated_subject_step3\": \"Final follow-up: Cold Calling Case Study\",\n    \"generated_body_step3\": \"<html><body><p>Nazma,</p><p>I understand you're incredibly busy, so this will be my last email. I thought you might find this useful: we put together a short case study on how a similar B2B company increased their qualified leads by 30% using our personalized automation strategies. </p><p>You can check it out here: [Relevant Case Study Link - Placeholder]. If you'd like to explore more at your own pace, feel free to visit our website: [Your Website Link - Placeholder].</p><p>All the best,</p><p>Yusuf</p></body></html>\"\n  },\n  {\n    \"firstName\": \"Sudeep\",\n    \"lastName\": \"Goswami\",\n    \"jobTitle\": \"Vice President, Sales\",\n    \"companyName\": \"Tempo Automation\",\n    \"emailAddress\": \"nathandrake.ysf@gmail.com\",\n    \"number\": \"650-417-5439\",\n    \"stage\": \"Nurture\",\n    \"linkedInURL\": \"https://www.linkedin.com/in/sudeepgoswami\",\n    \"websiteURL\": \"https://www.tempoautomation.com\",\n    \"is_qualified\": true,\n    \"qualification_reason\": \"Sudeep's past roles highlight a strong track record in aggressively scaling sales and Go-To-Market organizations, achieving significant growth (doubling twice in two years at Tempo Automation). This directly aligns with CoreMagnet's value proposition of helping B2B businesses increase conversion rates and scale faster through sales automation.\",\n    \"generated_subject\": \"An idea for scaling at Traefik Labs?\",\n    \"generated_body\": \"<html><body><p>Knowing your background in scaling GTM teams to double growth, I bet finding predictable ways to acquire B2B customers is always top of mind.</p><p>CoreMagnet helps B2B companies like Traefik Labs automate outreach with public data and personalized strategies to significantly boost conversion rates.</p><p>Would a 2-minute video showing how we accelerate customer acquisition be useful?</p><p>Best,<br>Yusuf</p></body></html>\",\n    \"generated_subject_step2\": \"Re: Scaling at Traefik Labs?\",\n    \"generated_body_step2\": \"<html><body><p>Just checking in on my last email about scaling B2B customer acquisition. Given your focus on growth, I thought it might be relevant.</p><p>Many GTM leaders find their outreach stuck on manual efforts. How are you currently automating your sales processes to find and convert new customers?</p><p>Happy to share how CoreMagnet simplifies this, if you're open to it.</p><p>Regards,<br>Yusuf</p></body></html>\",\n    \"generated_subject_step3\": \"Quick Video: Scaling B2B Acquisition\",\n    \"generated_body_step3\": \"<html><body><p>I understand you're busy, so this will be my last email. I made a quick video that shows exactly how CoreMagnet helps B2B companies increase conversion rates and scale faster: [Loom Video Link Here].</p><p>If you'd like to explore this further at your own pace, feel free to check out our website: [Your Website Link Here].</p><p>All the best,<br>Yusuf</p></body></html>\"\n  },\n  {\n    \"firstName\": \"Branden\",\n    \"lastName\": \"Baldwin\",\n    \"jobTitle\": \"Sales and Marketing Operations Manager\",\n    \"companyName\": \"Degreed\",\n    \"emailAddress\": \"hesapdeneme210@gmail.com\",\n    \"number\": \"801-425-1346\",\n    \"stage\": \"Meeting Set\",\n    \"linkedInURL\": \"https://www.linkedin.com/in/brandenbaldwin\",\n    \"websiteURL\": \"https://www.degreed.com\",\n    \"is_qualified\": true,\n    \"qualification_reason\": \"The trigger is Branden's recent engagement (liking a post) regarding how the ViB Community helps tech professionals discover 'vetted solutions' for 'b2b marketing.' This indicates a direct interest in effective B2B solutions and optimizing sales processes, aligning perfectly with CoreMagnet's B2B sales automation service designed to increase conversion rates and scale businesses faster.\",\n    \"generated_subject\": \"Quick thought on vetted solutions for ViB\",\n    \"generated_body\": \"<p>Hi Branden,</p><p>It seems like helping B2B tech professionals discover truly effective solutions, as mentioned in the ViB post you liked, is a key focus for you.</p><p>CoreMagnet automates B2B sales outreach using public data, helping companies dramatically increase conversions and scale quickly.</p><p>Would a quick 90-second demo of how we do this be helpful?</p><p>Best,</p><p>Yusuf</p>\",\n    \"generated_subject_step2\": \"Re: Vetted solutions for ViB\",\n    \"generated_body_step2\": \"<p>Hi Branden,</p><p>Just checking in on my email about helping tech professionals discover effective B2B solutions.</p><p>Automating outreach is key for rapid scaling, and that's exactly what CoreMagnet does.</p><p>How are you currently approaching B2B sales efficiency within your community? No worries if now isn't the right time.</p><p>Best,</p><p>Yusuf</p>\",\n    \"generated_subject_step3\": \"Demo Video: Vetted B2B Solutions\",\n    \"generated_body_step3\": \"<p>Hi Branden,</p><p>I understand you're busy, so this will be my last email. </p><p>I put together a quick Loom video that demonstrates exactly how CoreMagnet helps B2B tech companies increase conversion rates with automated sales outreach: <a href=\\\"https://coremagnet.com/demovideo\\\">Watch Demo</a>.</p><p>If you want to explore further on your own time, feel free to visit our website: <a href=\\\"https://coremagnet.com\\\">CoreMagnet.com</a>.</p><p>All the best,</p><p>Yusuf</p>\"\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        176
+      ],
+      "id": "ba97af20-7c29-4859-91ae-2117f59203d3",
+      "name": "test1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        176,
+        -48
+      ],
+      "id": "18c2649b-b8b0-4880-be4c-2537896aedba",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM leads WHERE status = 'ready_for_campaign';",
+        "options": {}
+      },
+      "name": "Get Ready Leads",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -80,
+        176
+      ],
+      "id": "5ac1cf7a-4351-4f01-bd4e-46906d6b67e5",
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c49ccd62-a1f2-4a9c-82b3-7ba9f907d83c",
+              "name": "campaign_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        -48
+      ],
+      "id": "4f61f01c-9b58-4995-b3b7-a41f067deb7a",
+      "name": "campaing_id"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gelen her bir lead'e boş bir campaign_id alanı ekle\nconst items = $input.all();\n\nconst updatedItems = items.map(item => {\n  item.json.campaign_id = \"\"; // Boş bir campaign_id ekle\n  return item;\n});\n\nreturn updatedItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        160
+      ],
+      "id": "2d0178f3-3808-4fc3-9264-62a3e6454826",
+      "name": "cmapaing_ID sutunu ekle"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        528,
+        176
+      ],
+      "id": "d9401ed6-537d-4322-bea0-85231d8b03fa",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Loop Over Leads": {
+      "main": [
+        [
+          {
+            "node": "Add Lead to Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Lead to Campaign": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Create Campaign": {
+      "main": [
+        [
+          {
+            "node": "campaing_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "test1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "test1": {
+      "main": [
+        [
+          {
+            "node": "Get Ready Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead Status": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "1. Create Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ready Leads": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "cmapaing_ID sutunu ekle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "campaing_id": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "cmapaing_ID sutunu ekle": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e5d4dba8-4112-4717-8374-551464eea817",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbc36faaf9504a19356f63287fa5598bc9b3c797c0a135dbcd9da60a4eea2369"
+  },
+  "id": "9sToyvsCXpGV91ic",
+  "tags": []
+}

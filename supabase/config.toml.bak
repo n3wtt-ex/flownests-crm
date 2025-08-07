@@ -1,0 +1,8 @@
+[project]
+id = "crm"
+
+[local] 
+api_port = 54321 
+db_port = 54325 
+studio_port = 54323 
+inbucket_port = 54324

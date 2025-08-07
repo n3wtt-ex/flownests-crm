@@ -1,0 +1,300 @@
+{
+  "name": "CSV Import with Path Input",
+  "nodes": [
+    {
+      "parameters": {
+        "ui": {
+          "fields": {
+            "values": [
+              {
+                "displayName": "CSV File Path",
+                "name": "csvFilePath",
+                "type": "string",
+                "default": "",
+                "description": "Please enter the full path to the CSV file (e.g., C:\\Users\\user\\Desktop\\leads.csv)"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Start CSV Upload",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "={{ $json.csvFilePath }}"
+      },
+      "name": "Upload CSV",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Parse CSV Data",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "firstName",
+              "type": "string",
+              "value": "={{ $json.first_name || $json.FirstName || $json.isim }}"
+            },
+            {
+              "name": "lastName",
+              "type": "string",
+              "value": "={{ $json.last_name || $json.LastName || $json.soyisim }}"
+            },
+            {
+              "name": "emailAddress",
+              "type": "string",
+              "value": "={{ $json.email || $json.Email || $json.email_address }}"
+            },
+            {
+              "name": "linkedInURL",
+              "type": "string",
+              "value": "={{ $json.linkedin_url || $json.linkedin }}"
+            },
+            {
+              "name": "jobTitle",
+              "type": "string",
+              "value": "={{ $json.job_title || $json.title }}"
+            },
+            {
+              "name": "companyName",
+              "type": "string",
+              "value": "={{ $json.company_name || $json.company }}"
+            },
+            {
+              "name": "websiteURL",
+              "type": "string",
+              "value": "={{ $json.website || $json.website_url }}"
+            }
+          ]
+        },
+        "options": {
+          "keepOnlySet": true
+        }
+      },
+      "name": "Map CSV to DB Schema",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Leads_n-mail"
+        },
+        "returnAll": true,
+        "options": {
+          "outputColumns": [
+            "emailAddress"
+          ]
+        }
+      },
+      "name": "Get Existing Emails",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        900,
+        500
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToCompare1": "emailAddress",
+        "fieldToCompare2": "emailAddress",
+        "options": {}
+      },
+      "name": "Find New Leads",
+      "type": "n8n-nodes-base.compareDatasets",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Leads_n-mail"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "firstName": "={{ $json.firstName }}",
+            "lastName": "={{ $json.lastName }}",
+            "emailAddress": "={{ $json.emailAddress }}",
+            "linkedInURL": "={{ $json.linkedInURL }}",
+            "jobTitle": "={{ $json.jobTitle }}",
+            "companyName": "={{ $json.companyName }}",
+            "websiteURL": "={{ $json.websiteURL }}"
+          }
+        },
+        "options": {}
+      },
+      "name": "Insert New Leads",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Leads_n-mail"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "name": "View Updated Table",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1560,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start CSV Upload": {
+      "main": [
+        [
+          {
+            "node": "Upload CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload CSV": {
+      "main": [
+        [
+          {
+            "node": "Parse CSV Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CSV Data": {
+      "main": [
+        [
+          {
+            "node": "Map CSV to DB Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map CSV to DB Schema": {
+      "main": [
+        [
+          {
+            "node": "Find New Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Emails": {
+      "main": [
+        [
+          {
+            "node": "Find New Leads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Find New Leads": {
+      "main": [
+        [
+          {
+            "node": "Insert New Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert New Leads": {
+      "main": [
+        [
+          {
+            "node": "View Updated Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "2"
+}

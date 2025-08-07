@@ -1,0 +1,275 @@
+:root{
+  --sky-top:#b9e6ff;
+  --sky-bottom:#e6f7ff;
+  --tree-green1:#2d6a4f;
+  --tree-green2:#1b4332;
+  --fence-wood:#c49a6c;
+  --fence-stroke:#8c6b45;
+  --road:#f7d36b; /* yellow-toned road */
+  --road-edge:#e6c257;
+  --road-stripe:#fff2a8;
+  --shadow:#00000033;
+  --rock:#9b9b9b;
+  --rock-edge:#777;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #f5f5f5;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+#scene {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  perspective: 1000px;
+  background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom) 60%);
+}
+
+/* Generic layer */
+.layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+/* Sky occupies whole background */
+.sky {
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom) 65%);
+  z-index: 0;
+}
+
+/* Trees horizon */
+.trees {
+  height: 200px;
+  bottom: calc(40vh + 80px);
+  transform: translateZ(0);
+  z-index: 2;
+  opacity: 0.95;
+}
+.trees svg {
+  width: 200%;
+  height: 100%;
+  display: block;
+  animation: treesPan 30s linear infinite;
+}
+@keyframes treesPan {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Fence */
+.fence {
+  height: 120px;
+  bottom: calc(40vh + 20px);
+  z-index: 3;
+  pointer-events: none;
+}
+.fence-strip {
+  position: absolute;
+  inset: 0 -50%;
+  background-image:
+    /* rails */
+    linear-gradient(var(--fence-wood), var(--fence-wood)),
+    linear-gradient(var(--fence-wood), var(--fence-wood)),
+    linear-gradient(var(--fence-wood), var(--fence-wood)),
+    linear-gradient(var(--fence-wood), var(--fence-wood)),
+    /* posts pattern via multiple gradients */
+    repeating-linear-gradient(
+      to right,
+      var(--fence-wood) 0 10px,
+      var(--fence-wood) 10px 12px,
+      transparent 12px 80px
+    );
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat-x;
+  background-size:
+    100% 6px, /* top rail */
+    100% 6px, /* mid rail */
+    100% 6px, /* bottom rail */
+    100% 0px, /* spacer (unused) */
+    80px 70px; /* posts */
+  background-position:
+    left 10px top 24px,
+    left 10px top 58px,
+    left 10px top 92px,
+    0 0,
+    0 28px;
+  border-top: 2px solid var(--fence-stroke);
+  filter: drop-shadow(0 2px 0 var(--fence-stroke));
+  animation: fencePan 12s linear infinite;
+  opacity: 0.95;
+}
+@keyframes fencePan {
+  from { background-position:
+      left 10px top 24px,
+      left 10px top 58px,
+      left 10px top 92px,
+      0 0,
+      0 28px; }
+  to { background-position:
+      left calc(10px - 160px) top 24px,
+      left calc(10px - 160px) top 58px,
+      left calc(10px - 160px) top 92px,
+      0 0,
+      -160px 28px; }
+}
+
+/* Road band near bottom, aligned horizontally (X-axis) */
+.road {
+  height: 40vh;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-rows: 1fr;
+  align-items: end;
+}
+.road-surface {
+  position: relative;
+  height: 70%;
+  background: linear-gradient(to bottom, var(--road), var(--road-edge));
+  box-shadow: inset 0 30px 60px #00000020;
+  border-top: 3px solid #d8b34d;
+}
+.road-centerline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 45%;
+  height: 8px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--road-stripe) 0 60px,
+      transparent 60px 120px
+    );
+  opacity: 0.8;
+  filter: drop-shadow(0 1px 0 #d0c07a);
+}
+
+/* Rock on road, slightly smaller than human */
+.rock {
+  width: 140px;
+  height: 90px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(20vh + 40px);
+  background: radial-gradient(circle at 40% 30%, #b3b3b3 0%, #a1a1a1 40%, var(--rock) 70%);
+  border: 3px solid var(--rock-edge);
+  border-radius: 45% 55% 40% 60% / 55% 45% 60% 40%;
+  z-index: 6; /* in front of Bugs */
+  filter: drop-shadow(0 8px 6px var(--shadow));
+}
+
+/* Bugs Bunny behind the rock */
+.bugs {
+  position: absolute;
+  width: 220px;
+  height: 300px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(20vh + 35px);
+  z-index: 5; /* behind rock */
+  will-change: transform;
+  transition: transform 0.2s ease-out;
+}
+/* timid mode: peek animation from behind rock */
+.bugs.timid {
+  --peek-y: 22px;      /* how much head+hands rise above rock */
+  --peek-delay: 0.0s;
+}
+#bugs-svg { display: block; }
+
+/* Soft ground shadow for both */
+.shadow-ellipse {
+  position: absolute;
+  width: 320px;
+  height: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(20vh + 20px);
+  background: radial-gradient(ellipse at center, #00000033 0%, transparent 60%);
+  z-index: 1;
+}
+
+/* Environment details additions: small bushes, clouds, sun */
+.bushes {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: calc(40vh + 10px);
+  height: 70px;
+  z-index: 2;
+  opacity: 0.9;
+  background:
+    radial-gradient(circle at 10% 60%, #79c56b 0 20px, transparent 21px),
+    radial-gradient(circle at 16% 65%, #6bb95d 0 18px, transparent 19px),
+    radial-gradient(circle at 22% 62%, #79c56b 0 22px, transparent 23px),
+    radial-gradient(circle at 30% 60%, #6bb95d 0 18px, transparent 19px),
+    radial-gradient(circle at 36% 65%, #79c56b 0 20px, transparent 21px),
+    radial-gradient(circle at 44% 60%, #6bb95d 0 22px, transparent 23px),
+    radial-gradient(circle at 52% 62%, #79c56b 0 20px, transparent 21px),
+    radial-gradient(circle at 60% 60%, #6bb95d 0 18px, transparent 19px),
+    radial-gradient(circle at 68% 62%, #79c56b 0 22px, transparent 23px),
+    radial-gradient(circle at 76% 60%, #6bb95d 0 20px, transparent 21px),
+    radial-gradient(circle at 84% 62%, #79c56b 0 18px, transparent 19px),
+    radial-gradient(circle at 92% 60%, #6bb95d 0 22px, transparent 23px);
+}
+
+.sun {
+  position: absolute;
+  top: 6vh;
+  right: 8vw;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at 30% 30%, #fff6b3 0 30px, #ffd95a 31px 60px, #ffc83d 61px 70px, transparent 71px);
+  z-index: 1;
+  filter: blur(0.2px) drop-shadow(0 0 10px #ffd95a88);
+}
+
+.clouds {
+  position: absolute;
+  top: 10vh;
+  left: -20vw;
+  right: -20vw;
+  height: 120px;
+  z-index: 1;
+  opacity: 0.9;
+  background:
+    radial-gradient(circle at 10% 60%, #ffffffcc 0 30px, transparent 31px),
+    radial-gradient(circle at 16% 55%, #ffffffcc 0 24px, transparent 25px),
+    radial-gradient(circle at 22% 58%, #ffffffcc 0 28px, transparent 29px),
+    radial-gradient(circle at 50% 60%, #ffffffcc 0 30px, transparent 31px),
+    radial-gradient(circle at 56% 55%, #ffffffcc 0 24px, transparent 25px),
+    radial-gradient(circle at 62% 58%, #ffffffcc 0 28px, transparent 29px),
+    radial-gradient(circle at 80% 60%, #ffffffcc 0 30px, transparent 31px),
+    radial-gradient(circle at 86% 55%, #ffffffcc 0 24px, transparent 25px),
+    radial-gradient(circle at 92% 58%, #ffffffcc 0 28px, transparent 29px);
+  animation: cloudsDrift 60s linear infinite;
+}
+@keyframes cloudsDrift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(20vw); }
+}
+
+/* Minor responsive tweaks */
+@media (max-width: 600px) {
+  .rock {
+    width: 110px;
+    height: 72px;
+  }
+  .bugs {
+    width: 180px;
+    height: 245px;
+  }
+  .shadow-ellipse {
+    width: 240px;
+  }
+}

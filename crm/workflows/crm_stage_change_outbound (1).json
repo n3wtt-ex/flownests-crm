@@ -1,0 +1,255 @@
+{
+  "name": "crm_stage_change_outbound",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm/n8n/deal_stage_changed",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "Webhook_CRMStageChange",
+      "name": "Webhook (CRM Stage Change)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        288,
+        432
+      ],
+      "webhookId": "63dd9d3d-a814-42de-93db-4675a28df251"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verify X-CRM-Secret header against fixed value (no env required)\nconst headers = $json.headers || {};\n\n// Normalize header keys to be safe across proxies/casing\nconst norm = Object.fromEntries(\n  Object.entries(headers).map(([k, v]) => [String(k).toLowerCase(), v])\n);\n\n// Incoming secret (lowercased header)\nconst secret = norm[\"x-crm-secret\"];\n\n// FIXED SECRET (put your own secret here)\nconst expected = \"25f0b07e-8b77-4a7d-a9bb-5c9c359f9e8d\";\n\n// Reserved-key-safe output (wrap everything under \"result\")\nif (!secret) {\n  return [{ result: { authorized: false, status: 401, reason: \"missing X-CRM-Secret\" } }];\n}\n\nif (secret !== expected) {\n  return [{ result: { authorized: false, status: 403, reason: \"invalid X-CRM-Secret\" } }];\n}\n\n// Authorized true -> IF node will route to Extract → Logger → Respond 200\nreturn [{ result: { authorized: true } }];\n\n// --- END: PASTE INTO n8n CODE NODE ---\n"
+      },
+      "id": "VerifySecret",
+      "name": "Verify Secret Header",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        432
+      ],
+      "notesInFlow": true,
+      "notes": "X-CRM-Secret header doğrulaması (ENV: CRM_OUTBOUND_SECRET)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "0f4cc1cd-2a11-4d02-970c-491b64ab878d",
+              "leftValue": "={{ $json.result.authorized }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "IF_Authorized",
+      "name": "IF Authorized?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        768,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * n8n Code node snippet for \"Extract Payload\"\n * Usage: Open the Code node (JavaScript, runOnceForAllItems), delete existing content,\n *        and paste ONLY the function body below into the JS Code area (without this comment).\n * This snippet extracts normalized fields from the webhook body and returns a single item.\n */\n\n// --- BEGIN: PASTE INTO n8n CODE NODE ---\n\n// Extract primary body fields for downstream use\nconst body = $json.body || $json;\n\n// Accept both snake_case and camelCase variants (defensive parsing)\nconst deal_id      = body.deal_id      ?? body.dealId      ?? null;\nconst old_stage_id = body.old_stage_id ?? body.oldStageId  ?? null;\nconst new_stage_id = body.new_stage_id ?? body.newStageId  ?? null;\nconst occurred_at  = body.occurred_at  ?? body.occurredAt  ?? null;\nconst source       = body.source       ?? \"crm-ui\";\n\n// Reserved-key-safe, flat JSON result\nreturn [{\n  deal_id,\n  old_stage_id,\n  new_stage_id,\n  occurred_at,\n  source\n}];\n\n// --- END: PASTE INTO n8n CODE NODE ---\n"
+      },
+      "id": "ExtractPayload",
+      "name": "Extract Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        176
+      ],
+      "notesInFlow": true,
+      "notes": "Gelen payload: {deal_id, old_stage_id, new_stage_id, occurred_at, source}"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.new_stage_id || '' }}",
+        "rules": {
+          "rules": [
+            {
+              "operation": "contains",
+              "value2": "not_interested"
+            },
+            {
+              "operation": "contains",
+              "value2": "NOT_INTERESTED"
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "id": "Switch_NotInterested",
+      "name": "Switch: Not Interested?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        176
+      ],
+      "notesInFlow": true,
+      "notes": "Örnek koşul: Eğer yeni stage 'not interested' içeriyorsa bir aksiyon çalıştır."
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = `Stage change logged for deal ${$json.deal_id} -> ${$json.new_stage_id}`;\nconsole.log(msg);\nreturn [{ message: msg }];\n"
+      },
+      "id": "Logger",
+      "name": "Logger",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        240
+      ],
+      "notesInFlow": true,
+      "notes": "Varsayılan yol: Sadece logla."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"received\",\"deal_id\":\"{{$json.deal_id || ''}}\",\"new_stage_id\":\"{{$json.new_stage_id || ''}}\"}",
+        "options": {}
+      },
+      "id": "Respond",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.INSTANTLY_API_BASE || 'https://api.example.com') + '/remove-lead' }}",
+        "options": {}
+      },
+      "id": "InstantlyRemove",
+      "name": "Instantly: Remove Lead (Mock)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1504,
+        64
+      ],
+      "notesInFlow": true,
+      "disabled": true,
+      "notes": "S2’de gerçek Instantly V2 API entegrasyonu yapılacak. Bu node şimdilik mock."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (CRM Stage Change)": {
+      "main": [
+        [
+          {
+            "node": "Verify Secret Header",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Secret Header": {
+      "main": [
+        [
+          {
+            "node": "IF Authorized?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Authorized?": {
+      "main": [
+        [
+          {
+            "node": "Extract Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Payload": {
+      "main": [
+        [
+          {
+            "node": "Switch: Not Interested?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Not Interested?": {
+      "main": [
+        [
+          {
+            "node": "Instantly: Remove Lead (Mock)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Logger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logger": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ba811d56-6609-4cb4-b4ec-5f65f5ca797e",
+  "meta": {
+    "instanceId": "cbc36faaf9504a19356f63287fa5598bc9b3c797c0a135dbcd9da60a4eea2369"
+  },
+  "id": "qYIfA1bfeT6T2h4o",
+  "tags": []
+}

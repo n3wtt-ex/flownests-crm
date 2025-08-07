@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cartoon Road Scene - Bugs Tracks Cursor</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div id="scene">
+    <!-- Sky -->
+    <div class="layer sky"></div>
+    <!-- Sun and clouds -->
+    <div class="layer sun"></div>
+    <div class="layer clouds" data-depth="0.05"></div>
+
+    <!-- Far trees (parallax) -->
+    <div class="layer trees" data-depth="0.1">
+      <svg viewBox="0 0 1200 200" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="treeGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2d6a4f" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#1b4332" stop-opacity="0.9"/>
+          </linearGradient>
+        </defs>
+        <g fill="url(#treeGrad)">
+          <!-- A repeating forest silhouette -->
+          <path d="M0,180 
+                   L20,150 L30,160 L40,140 L50,160 L60,120 L70,150 L80,130 L90,160 L100,140 L110,170 L120,150 L130,180
+                   L140,150 L150,160 L160,140 L170,160 L180,120 L190,150 L200,130 L210,160 L220,140 L230,170 L240,150 L250,180
+                   L260,150 L270,160 L280,140 L290,160 L300,120 L310,150 L320,130 L330,160 L340,140 L350,170 L360,150 L370,180
+                   L380,150 L390,160 L400,140 L410,160 L420,120 L430,150 L440,130 L450,160 L460,140 L470,170 L480,150 L490,180
+                   L500,150 L510,160 L520,140 L530,160 L540,120 L550,150 L560,130 L570,160 L580,140 L590,170 L600,150 L610,180
+                   L620,150 L630,160 L640,140 L650,160 L660,120 L670,150 L680,130 L690,160 L700,140 L710,170 L720,150 L730,180
+                   L740,150 L750,160 L760,140 L770,160 L780,120 L790,150 L800,130 L810,160 L820,140 L830,170 L840,150 L850,180
+                   L860,150 L870,160 L880,140 L890,160 L900,120 L910,150 L920,130 L930,160 L940,140 L950,170 L960,150 L970,180
+                   L980,150 L990,160 L1000,140 L1010,160 L1020,120 L1030,150 L1040,130 L1050,160 L1060,140 L1070,170 L1080,150 L1090,180
+                   L1100,150 L1110,160 L1120,140 L1130,160 L1140,120 L1150,150 L1160,130 L1170,160 L1180,140 L1190,170 L1200,180
+                   L1200,200 L0,200 Z"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Fence (parallax, repeating) -->
+    <div class="layer fence" data-depth="0.2">
+      <div class="fence-strip"></div>
+    </div>
+    <!-- Bushes near fence line -->
+    <div class="layer bushes" data-depth="0.15"></div>
+
+    <!-- Road -->
+    <div class="layer road">
+      <div class="road-surface"></div>
+      <div class="road-centerline"></div>
+    </div>
+
+    <!-- Rock (on road, slightly smaller than human) -->
+    <div class="layer rock" aria-label="Rock"></div>
+
+    <!-- Bugs Bunny (behind rock) -->
+    <div class="layer bugs timid" aria-label="Bugs Bunny" data-depth="0.3">
+      <!-- Simplified cartoon bunny, head rotates slightly, pupils track cursor -->
+      <svg id="bugs-svg" width="220" height="300" viewBox="0 0 220 300" role="img" aria-label="Bugs Bunny looking around">
+        <defs>
+          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.25"/>
+          </filter>
+        </defs>
+
+        <!-- Body behind rock (torso) - lowered to be hidden, only hands will peek -->
+        <g id="body" filter="url(#shadow)" opacity="0.9">
+          <ellipse cx="110" cy="220" rx="40" ry="45" fill="#c9c9c9" stroke="#8b8b8b" stroke-width="3"/>
+        </g>
+
+        <!-- Hands that peek over rock -->
+        <g id="hands" filter="url(#shadow)" transform="translate(110,210)">
+          <!-- Left hand -->
+          <g id="handL" transform="translate(-35,0)">
+            <ellipse cx="0" cy="0" rx="10" ry="7" fill="#dcdcdc" stroke="#8b8b8b" stroke-width="2"/>
+            <path d="M-10,-2 Q-15,-8 -12,-14" stroke="#8b8b8b" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M-3,-4 Q-8,-10 -5,-16" stroke="#8b8b8b" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M4,-4 Q0,-10 3,-16" stroke="#8b8b8b" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </g>
+          <!-- Right hand -->
+          <g id="handR" transform="translate(35,0)">
+            <ellipse cx="0" cy="0" rx="10" ry="7" fill="#dcdcdc" stroke="#8b8b8b" stroke-width="2"/>
+            <path d="M-10,-2 Q-15,-8 -12,-14" stroke="#8b8b8b" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M-3,-4 Q-8,-10 -5,-16" stroke="#8b8b8b" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M4,-4 Q0,-10 3,-16" stroke="#8b8b8b" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </g>
+        </g>
+
+        <!-- Head group to rotate slightly -->
+        <g id="head" transform="translate(110,130)">
+          <!-- Ears -->
+          <g id="ears" transform="translate(0,-70)">
+            <path d="M-35,10 C-37,-50 -15,-80 -5,-110 C5,-80 10,-50 8,10" fill="#dcdcdc" stroke="#8b8b8b" stroke-width="3"/>
+            <path d="M25,10 C23,-50 5,-80 -5,-110 C-15,-80 -20,-50 -18,10" fill="#dcdcdc" stroke="#8b8b8b" stroke-width="3"/>
+            <path d="M-23,10 C-24,-35 -10,-60 -5,-82 C0,-60 4,-35 3,10" fill="#ffb3c1" opacity="0.7"/>
+            <path d="M13,10 C12,-35 0,-60 -5,-82 C-10,-60 -12,-35 -11,10" fill="#ffb3c1" opacity="0.7"/>
+          </g>
+
+          <!-- Face -->
+          <g id="face">
+            <ellipse cx="0" cy="0" rx="48" ry="52" fill="#dcdcdc" stroke="#8b8b8b" stroke-width="3"/>
+            <!-- Cheeks / muzzle -->
+            <ellipse cx="-15" cy="20" rx="18" ry="14" fill="#ffffff" stroke="#b3b3b3" stroke-width="2"/>
+            <ellipse cx="15" cy="20" rx="18" ry="14" fill="#ffffff" stroke="#b3b3b3" stroke-width="2"/>
+            <!-- Nose -->
+            <ellipse cx="0" cy="14" rx="7" ry="5" fill="#ff6b6b" stroke="#c94c4c" stroke-width="2"/>
+            <!-- Mouth -->
+            <path d="M-8,30 Q0,38 8,30" fill="none" stroke="#8b8b8b" stroke-width="3" stroke-linecap="round"/>
+            <!-- Teeth -->
+            <rect x="-6" y="32" width="6" height="9" fill="#ffffff" stroke="#d0d0d0"/>
+            <rect x="0" y="32" width="6" height="9" fill="#ffffff" stroke="#d0d0d0"/>
+          </g>
+
+          <!-- Eyes group (pupils move) -->
+          <g id="eyes" transform="translate(0,-5)">
+            <!-- Eye whites -->
+            <ellipse id="eyeL" cx="-14" cy="-4" rx="9" ry="12" fill="#ffffff" stroke="#b3b3b3" stroke-width="2"/>
+            <ellipse id="eyeR" cx="14" cy="-4" rx="9" ry="12" fill="#ffffff" stroke="#b3b3b3" stroke-width="2"/>
+            <!-- Pupils -->
+            <circle id="pupilL" cx="-14" cy="-4" r="3.2" fill="#222222"/>
+            <circle id="pupilR" cx="14" cy="-4" r="3.2" fill="#222222"/>
+            <!-- Eyelids (subtle) -->
+            <path d="M-23,-4 Q-14,-10 -5,-4" fill="none" stroke="#8b8b8b" stroke-width="2" opacity="0.6"/>
+            <path d="M5,-4 Q14,-10 23,-4" fill="none" stroke="#8b8b8b" stroke-width="2" opacity="0.6"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Ground shadow for rock/bugs -->
+    <div class="layer shadow-ellipse"></div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

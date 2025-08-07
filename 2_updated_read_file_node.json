@@ -1,0 +1,12 @@
+{
+  "parameters": {
+    "fileName": "={{ $json.csvFilePath }}"
+  },
+  "name": "Upload CSV",
+  "type": "n8n-nodes-base.readBinaryFile",
+  "typeVersion": 1,
+  "position": [
+    460,
+    300
+  ]
+}

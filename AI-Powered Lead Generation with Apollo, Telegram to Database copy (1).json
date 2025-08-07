@@ -1,0 +1,1047 @@
+{
+  "name": "AI-Powered Lead Generation with Apollo, Telegram to Database copy",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "/************************************************************\n * Build Apollo People-search URL from parser output\n * Handles both shapes:\n *   { query: [ { … } ] }      ← array\n *   { query: { … } }          ← object\n ************************************************************/\n\n// 1. Obtener el JSON que llega del nodo anterior\nconst inputData = $json;\n\n// 2. Normalizar para que paramsData siempre sea un objeto\nlet paramsData;\n\nif (Array.isArray(inputData.query)) {\n  // Caso antiguo: query es un array\n  paramsData = inputData.query[0];\n} else if (inputData.query) {\n  // Caso nuevo: query es un objeto\n  paramsData = inputData.query;\n} else {\n  throw new Error('Falta la propiedad \"query\" en el input');\n}\n\n// 3. URL base de Apollo (interfaz web)\n//    Para llamar a la API REST cambia a https://api.apollo.io/v1/mixed_people/search\nconst baseURL = 'https://app.apollo.io/#/people';\n\n// 4. Construir los parámetros dinámicos\nconst queryParts = [\n  'sortByField=recommendations_score',\n  'sortAscending=false',\n  'page=1',\n];\n\n// Helper para arrays → personTitles[]=ceo\nconst addArrayParams = (paramName, values) => {\n  values.forEach((val) => {\n    const decoded = val.replace(/\\+/g, ' ');          // “barcelona+spain” ⇒ “barcelona spain”\n    queryParts.push(`${paramName}[]=${encodeURIComponent(decoded)}`);\n  });\n};\n\n// job_title → personTitles[]\nif (Array.isArray(paramsData.job_title)) {\n  addArrayParams('personTitles', paramsData.job_title);\n}\n\n// location → personLocations[]\nif (Array.isArray(paramsData.location)) {\n  addArrayParams('personLocations', paramsData.location);\n}\n\n// business → qOrganizationKeywordTags[]\nif (Array.isArray(paramsData.business)) {\n  addArrayParams('qOrganizationKeywordTags', paramsData.business);\n}\n\n// campos estáticos\nqueryParts.push('includedOrganizationKeywordFields[]=tags');\nqueryParts.push('includedOrganizationKeywordFields[]=name');\n\n// 5. Montar la URL final\nconst finalURL = `${baseURL}?${queryParts.join('&')}`;\n\n// 6. Devolver resultado\nreturn [{ json: { finalURL } }];\n"
+      },
+      "id": "381e912e-604f-438e-8cbc-df2bf3bf269f",
+      "name": "Create URL",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1920,
+        560
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "336074e3-b3b9-4dde-92d7-fb5af51b8ffa",
+              "name": "firstName",
+              "type": "string",
+              "value": "={{ $json.first_name }}"
+            },
+            {
+              "id": "da8362c5-75a5-4431-847d-fd4e02112bcc",
+              "name": "emailAddress",
+              "type": "string",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "id": "3c99e0e0-4184-4e85-baa0-8bb85e4e227b",
+              "name": "linkedInURL",
+              "type": "string",
+              "value": "={{ $json.linkedin_url }}"
+            },
+            {
+              "id": "a45af1ff-7026-47a0-a42c-bdb3b27c8e3d",
+              "name": "seniority ",
+              "type": "string",
+              "value": "={{ $json.seniority }}"
+            },
+            {
+              "id": "fa551406-a981-4fbb-babc-aa78ab10010d",
+              "name": "jobTitle",
+              "type": "string",
+              "value": "={{ $json.employment_history[0].title }}"
+            },
+            {
+              "id": "2e8d8d61-bd02-4f24-91f1-707152d99806",
+              "name": "companyName",
+              "type": "string",
+              "value": "={{ $json.employment_history[0].organization_name }}"
+            },
+            {
+              "id": "1295a702-636a-48bd-8bcd-df92162237fb",
+              "name": "location",
+              "type": "string",
+              "value": "={{ $json.city }}, {{ $json.state }}"
+            },
+            {
+              "id": "0072b657-0296-4858-b190-621831943816",
+              "name": "country",
+              "type": "string",
+              "value": "={{ $json.country }}"
+            },
+            {
+              "id": "22ce107c-30ef-4abe-9fab-8d49482da87c",
+              "name": "Number",
+              "type": "string",
+              "value": "={{ $json.organization.primary_phone && $json.organization.primary_phone.sanitized_number && $json.organization.primary_phone.sanitized_number ? $json.organization.primary_phone.sanitized_number : null }}"
+            },
+            {
+              "id": "302b9529-e16b-49ce-bbb6-ae2de90fed93",
+              "name": "websiteURL",
+              "type": "string",
+              "value": "={{ $json.organization_website_url }}"
+            },
+            {
+              "id": "13026de1-0927-44f7-8388-4d525f44974d",
+              "name": "businessIndustry",
+              "type": "string",
+              "value": "={{ $json.industry }}"
+            },
+            {
+              "id": "1a8ae803-f0bd-48d5-bf85-89b91c2e9c64",
+              "name": "lastName",
+              "type": "string",
+              "value": "={{ $json.last_name }}"
+            },
+            {
+              "id": "03cb9c0d-4c05-4d00-88a4-de33e34e7c16",
+              "name": "emailStatus",
+              "type": "string",
+              "value": "={{ $json.email_status }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1bc5042-9f57-4214-95e8-d318f974214a",
+      "name": "Extract Info",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2368,
+        560
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {},
+      "id": "7b39baf3-95be-4365-953d-94e6c7e9fba0",
+      "name": "Limit",
+      "type": "n8n-nodes-base.limit",
+      "position": [
+        3488,
+        640
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}"
+      },
+      "id": "40581bd4-1743-46c0-afca-ffb1533a8ff9",
+      "name": "Download File1",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        848,
+        384
+      ],
+      "webhookId": "52cee694-ee8b-401c-bbb1-691f74e3fc56",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "GpN6Pej1ilA7qTbt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "e1deaf10-da6a-4e3e-86cd-f06fc97f099f",
+      "name": "Transcribe1",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1056,
+        384
+      ],
+      "typeVersion": 1.6,
+      "credentials": {
+        "openAiApi": {
+          "id": "AmInadFqnz7yh6xy",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fe7ecc99-e1e8-4a5e-bdd6-6fce9757b234",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0b0dea08-6d5a-4b79-93f3-010d0cecbce0",
+      "name": "Text1",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        960,
+        640
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "8c844924-b2ed-48b0-935c-c66a8fd0c778",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e4f2c54a-d30a-4fa0-bf9c-2f61c7d105c7",
+      "name": "Voice or Text1",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        608,
+        480
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('User message').item.json.message.chat.id }}",
+        "contextWindowLength": 10
+      },
+      "id": "de216d5b-3174-43b3-88fb-1e1c24c044fb",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        1408,
+        704
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"location\": [\"barcelona+spain\"],\n  \"business\": [\"ecommerce\"],\n  \"job_title\": [\"ceo\"]\n}"
+      },
+      "id": "8ae50c4f-166d-4d75-884b-b8e2bfa68a1d",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1520,
+        704
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Leads_n-mail",
+          "cachedResultName": "Leads_n-mail"
+        },
+        "returnAll": true,
+        "options": {
+          "outputColumns": [
+            "emailAddress"
+          ]
+        }
+      },
+      "id": "9ee49874-f99c-40c8-9bda-d4a77861c4dc",
+      "name": "Select already scraped mails",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        2128,
+        288
+      ],
+      "typeVersion": 2.6,
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mergeByFields": {
+          "values": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "2d3f1d2d-4c92-48cc-b5eb-66c9b74b08ea",
+      "name": "Keep only the new leads",
+      "type": "n8n-nodes-base.compareDatasets",
+      "position": [
+        2816,
+        528
+      ],
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {},
+      "id": "262750d8-7731-4288-bbe8-29301bf6fe40",
+      "name": "Already scraped",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        3168,
+        448
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "feb577bf-b3fb-40da-b37b-41d82345c627",
+              "name": "output",
+              "type": "string",
+              "value": "={{ $input.all().length }} new contacts have been added to the Google Sheet!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "71c8f36b-e79e-4bb4-974d-de25bec1554d",
+      "name": "Set Telegram message",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3296,
+        640
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "chatId": "5656980243",
+        "text": "={{ $input.all().length }} new contacts have been added to the Google Sheet!",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "298b4e83-df46-4c55-85d1-a1eb5693a490",
+      "name": "Confirmation message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        3712,
+        640
+      ],
+      "webhookId": "9f4d6c3e-33a6-4240-8b58-ccc1f2b14734",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "GpN6Pej1ilA7qTbt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "51891466-39d3-44eb-99f0-65d1b7f87d5b",
+      "name": "User message",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        400,
+        480
+      ],
+      "webhookId": "cb32cef9-e888-40ee-b231-e4bf8612a87d",
+      "typeVersion": 1.1,
+      "credentials": {
+        "telegramApi": {
+          "id": "GpN6Pej1ilA7qTbt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# First step: recieve the message via audio or text",
+        "height": 600,
+        "width": 860,
+        "color": 3
+      },
+      "id": "6053d232-b6af-442e-84d5-670176b00cf6",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# Create the json for the url",
+        "height": 600,
+        "width": 580
+      },
+      "id": "2749539e-0f59-43c6-8d56-1091760ccf95",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1248,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Who’s it for\nGrowth hackers, SDR teams, and founders who collect lead requests via Telegram (voice or text) and want those leads scraped, verified, de-duplicated, and stored in a single Supabase table—hands-free.\n\n## How it works\n1. **Telegram trigger** captures a user’s text or voice note.  \n2. **OpenAI Whisper + GPT agent** parse the message and build a structured search query.  \n3. A **Code node** crafts a people-search URL, then an **HTTP request** calls the Apify Apollo-io Scraper to pull up to 500 contacts.  \n4. **Filters** keep only “verified” emails and compare them to a Postgres list of already-scraped addresses to avoid duplicates.  \n5. Fresh contacts are inserted into the Supabase table **Leads_n-mail**, and the bot replies with a count of new rows added. :contentReference[oaicite:0]{index=0}\n\n## How to set up\n1. Replace the hard-coded Apify token in **Apollo Scraper** with an environment variable.  \n2. Add OpenAI credentials for Whisper & GPT nodes.  \n3. Point the Postgres “dedupe” node at your existing email table (or skip it).  \n4. Update the Supabase connection and table name, then test with a sample voice note.\n\n### Supabase column headers  \n`firstName | lastName | emailAddress | linkedInURL | jobTitle | companyName | location | country | websiteURL | businessIndustry | seniority | number`\n\n## Requirements\n- Telegram Bot token  \n- OpenAI API key  \n- Apify account with Apollo-io Scraper actor  \n- Supabase project credentials (or swap for Airtable/Sheets)  \n- n8n v0.231+ self-hosted or Cloud\n\n## How to customize the workflow\n- **Change the prompt** to capture extra fields (e.g., funding stage).  \n- **Adjust totalRecords** in the HTTP node to pull more or fewer leads.  \n- **Swap storage**—write to Airtable, HubSpot, or Sheets instead of Supabase.  \n- **Add enrichment**—insert Clearbit or Hunter steps before the insert.\n\n",
+        "height": 800,
+        "width": 1400,
+        "color": 6
+      },
+      "id": "3d05a5ee-538e-460f-96cd-b2451363d956",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        400,
+        864
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Scrape the leads from apify actor",
+        "height": 280,
+        "width": 880,
+        "color": 5
+      },
+      "id": "47f0b39c-346a-40ec-9c31-51b478977526",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1872,
+        480
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Insert the new leads to your database\n\n*can be airtable/sheets/supabase",
+        "height": 240
+      },
+      "id": "c5532351-1673-46fa-b77e-e2145375cc9e",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3040,
+        1008
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"query\": {{ $json.output }}\n}\n\n",
+        "options": {}
+      },
+      "id": "611c1ac8-273c-4ac3-9a40-f29e8533023f",
+      "name": "Generate query payload",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1728,
+        608
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Role\nYou are LeadChat. Your single job is to return a **JSON array of one object** that tells the sub-workflow what to scrape.\n\n# Required JSON schema\n```json\n[\n  {\n    \"location\": [\"city+country\"],      // lowercase, spaces→+\n    \"business\": [\"industry\"],          // lowercase, words→+\n    \"job_title\": [\"role\"]              // lowercase, words→+\n  }\n]\n"
+        }
+      },
+      "id": "df58cbe6-0fff-4e40-99d1-b72ec1b9c739",
+      "name": "Scraper agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1328,
+        480
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "actorId": {
+          "__rl": true,
+          "value": "jljBwyyQakqrL1wae",
+          "mode": "list",
+          "cachedResultName": "🔥Apollo Scraper - Scrape upto 50k Leads (code_crafter/apollo-io-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/jljBwyyQakqrL1wae/input"
+        }
+      },
+      "id": "8c13b90d-b795-4a85-b410-ef673141e266",
+      "name": "Run an Actor",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "position": [
+        2128,
+        560
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "apifyApi": {
+          "id": "XcEGuDixyqemqh0q",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        704
+      ],
+      "id": "e6d6d62d-1620-4be9-b136-a32c70b5fe26",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UsOAlwSuOCQZeztl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE public.\"Leads_n-mail\" (\n    \"firstName\" TEXT,\n    \"lastName\" TEXT,\n    \"emailAddress\" TEXT PRIMARY KEY,\n    \"linkedInURL\" TEXT,\n    \"jobTitle\" TEXT,\n    \"companyName\" TEXT,\n    \"location\" TEXT,\n    \"country\" TEXT,\n    \"websiteURL\" TEXT,\n    \"businessIndustry\" TEXT,\n    \"seniority\" TEXT,\n    \"number\" TEXT\n);\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2864,
+        208
+      ],
+      "id": "4b3ece9e-7d19-4e2c-9518-a3f3b8202c50",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Leads_n-mail",
+          "mode": "list",
+          "cachedResultName": "Leads_n-mail"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "firstName": "={{ $json.firstName }}",
+            "lastName": "={{ $json.lastName }}",
+            "emailAddress": "={{ $json.emailAddress }}",
+            "linkedInURL": "={{ $json.linkedInURL }}",
+            "jobTitle": "={{ $json.jobTitle }}",
+            "companyName": "={{ $json.companyName }}",
+            "location": "={{ $json.location }}",
+            "country": "={{ $json.country }",
+            "websiteURL": "={{ $json.websiteURL }}",
+            "businessIndustry": "={{ $json.businessIndustry }}{{ $('Apollo Scraper').item.json.organization.industry }}",
+            "seniority": "={{ $json.seniority }}",
+            "number": "={{ $json.Number }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "firstName",
+              "displayName": "firstName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lastName",
+              "displayName": "lastName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "emailAddress",
+              "displayName": "emailAddress",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedInURL",
+              "displayName": "linkedInURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "jobTitle",
+              "displayName": "jobTitle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "companyName",
+              "displayName": "companyName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "websiteURL",
+              "displayName": "websiteURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "businessIndustry",
+              "displayName": "businessIndustry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "number",
+              "displayName": "number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3088,
+        688
+      ],
+      "id": "a472d66f-845b-4b08-b505-9bac6e054d21",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c49e7377-db5e-4458-bea5-9e297e19f620",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.emailStatus }}",
+              "rightValue": "verified"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f40dae45-00bd-4405-850f-1a4a38ab4cbe",
+      "name": "Only Keep Verified Emails",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        2592,
+        560
+      ],
+      "typeVersion": 2.2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Confirmation message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text1": {
+      "main": [
+        [
+          {
+            "node": "Scraper agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create URL": {
+      "main": [
+        [
+          {
+            "node": "Run an Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe1": {
+      "main": [
+        [
+          {
+            "node": "Scraper agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Info": {
+      "main": [
+        [
+          {
+            "node": "Only Keep Verified Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor": {
+      "main": [
+        [
+          {
+            "node": "Extract Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User message": {
+      "main": [
+        [
+          {
+            "node": "Voice or Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraper agent": {
+      "main": [
+        [
+          {
+            "node": "Generate query payload",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Select already scraped mails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Scraper agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice or Text1": {
+      "main": [
+        [
+          {
+            "node": "Download File1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Telegram message": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate query payload": {
+      "main": [
+        [
+          {
+            "node": "Create URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep only the new leads": {
+      "main": [
+        [
+          {
+            "node": "Already scraped",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Already scraped",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Already scraped",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Scraper agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select already scraped mails": {
+      "main": [
+        [
+          {
+            "node": "Keep only the new leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Scraper agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        []
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Set Telegram message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Keep Verified Emails": {
+      "main": [
+        [
+          {
+            "node": "Keep only the new leads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "e7ce3608-f767-4e91-bdaf-804b349c2a40",
+  "meta": {
+    "templateId": "5611",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbc36faaf9504a19356f63287fa5598bc9b3c797c0a135dbcd9da60a4eea2369"
+  },
+  "id": "9qMP8OGAJVy1pAIK",
+  "tags": []
+}

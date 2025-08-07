@@ -1,0 +1,24 @@
+{
+  "parameters": {
+    "ui": {
+      "fields": {
+        "values": [
+          {
+            "displayName": "CSV File Path",
+            "name": "csvFilePath",
+            "type": "string",
+            "default": "",
+            "description": "Please enter the full path to the CSV file (e.g., C:\\Users\\user\\Desktop\\leads.csv)"
+          }
+        ]
+      }
+    }
+  },
+  "name": "Start CSV Upload",
+  "type": "n8n-nodes-base.manualTrigger",
+  "typeVersion": 1,
+  "position": [
+    240,
+    300
+  ]
+}

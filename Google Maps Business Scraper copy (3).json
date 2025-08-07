@@ -1,0 +1,1037 @@
+{
+  "name": "Google Maps Business Scraper copy",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brightdata.com/request",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer 7ad03e52-e88f-4faf-b990-316080b0759a"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "=https://www.google.com/maps/search/{{ $json.searchQuery.trim() }}"
+            },
+            {
+              "name": "zone",
+              "value": "newt_serapi"
+            },
+            {
+              "name": "format",
+              "value": "raw"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "7658332e-b9a1-4fbd-a5bb-599a483087e4",
+      "name": "Perform Bright Data Web Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        912,
+        1024
+      ],
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "id": "e70d9248-0f73-4fca-9082-e0a7f6b88b31",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        1136,
+        1216
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UsOAlwSuOCQZeztl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract Google Maps content \n\n{{ $json.data }}\n\nMake sure to return the data in JSON",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "3543b771-b6fd-477c-9360-536c4ed69bde",
+      "name": "Google Maps Data Extractor",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1136,
+        1024
+      ],
+      "retryOnFail": true,
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "content": "## Note\n\nDeals with the Google Maps data extraction by utilizing the Bright Data and Google Gemini LLM for transforming the profile into a structured JSON response.\n\n**Please make sure to set the input fields node with the filtering criteria, Bright Data zone name, Webhook notification URL**\n",
+        "height": 240,
+        "width": 400
+      },
+      "id": "f6d07691-7720-429c-925b-5f952e36fb78",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        96,
+        624
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "items[0].binary = {\n  data: {\n    data: new Buffer(JSON.stringify(items[0].json, null, 2)).toString('base64')\n  }\n};\nreturn items;"
+      },
+      "id": "772d701b-7f74-40aa-9af3-81236e469fe8",
+      "name": "Create a binary data for Structured Data Extract",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        1680,
+        928
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=d:\\GoogleMaps_Response.json",
+        "options": {}
+      },
+      "id": "d01cfd2c-4536-434e-a4e4-cf06c55fd130",
+      "name": "Write the structured content to disk",
+      "type": "n8n-nodes-base.readWriteFile",
+      "position": [
+        1984,
+        928
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "=https://webhook.site/78703a21-980f-4ec7-bd41-899c3766ac38",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "response",
+              "value": "={{ $json.output.toJsonString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e313353c-43c6-4303-b310-5af86cdd0e44",
+      "name": "Initiate a Webhook Notification for Structured Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1680,
+        1120
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "content": "## Output Data Handling",
+        "height": 772,
+        "width": 1580,
+        "color": 4
+      },
+      "id": "0ccc7996-0bfa-4acc-8001-272b9b86817f",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1520,
+        800
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.first().json.output"
+      },
+      "id": "c56d8b05-b37e-4999-aa89-a9c0a9c9e270",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1632,
+        1328
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a43d3328-a437-4cdc-bf29-9ad44a14df01",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1648,
+        288
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "content": "## Step 1 : Set the Input Fields\n\nurl : https://www.google.com/maps/search/\nwebhook notification url: https://webhook.site/c9118da2-1c54-460f-a83a-e5131b7098db\nsearch : dentists+in+texas/?q=dentists+in+texas\nzone : serp_api1\nstart : 0\nnum : 20\n",
+        "height": 260,
+        "width": 660,
+        "color": 6
+      },
+      "id": "9b69dab5-8c4e-4d43-bbc3-90b662f50ee3",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3312,
+        832
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Data Enrichment with Yelp data extraction\n",
+        "height": 616,
+        "width": 3064,
+        "color": 5
+      },
+      "id": "7622c2b4-19d2-4f5a-80e5-60e4106b70e4",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1520,
+        176
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "name",
+              "field2": "name"
+            }
+          ]
+        },
+        "joinMode": "enrichInput2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2976,
+        304
+      ],
+      "id": "1e8b479e-b7c3-438e-bbfa-1341829c2b1b",
+      "name": "Merge",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\nlet url = item.appointment_link;\n\n// URL'deki '?' karakterinden sonrasını (tüm parametreleri) sil\nif (url && url.includes('?')) {\n  url = url.split('?')[0];\n}\n\n// Yeni, temiz URL'yi bir sonraki adıma gönder\nitem.cleaned_url = url;\n\nreturn item;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        1328
+      ],
+      "id": "51b4f027-a593-42a1-b2bc-6d4f3bf2ef64",
+      "name": "url temizle"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\n// appointment_link'i kontrol et\nif (item.appointment_link && item.appointment_link.startsWith('/')) {\n  item.appointment_link = 'https://www.google.com' + item.appointment_link;\n}\n\n// web alanını kontrol et (browserless'tan gelen)\nif (item.website && !item.website.startsWith('http')) {\n  item.website = 'https://' + item.website;\n}\n\nreturn item;\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        1328
+      ],
+      "id": "eb24b5cb-5a15-455f-b329-aaa7b7064dd4",
+      "name": "url kontorl"
+    },
+    {
+      "parameters": {
+        "operation": "scrape",
+        "url": "={{ $json.web }}",
+        "scrapeOptions": {
+          "options": {
+            "headers": {}
+          }
+        },
+        "requestOptions": {}
+      },
+      "type": "@mendable/n8n-nodes-firecrawl.firecrawl",
+      "typeVersion": 1,
+      "position": [
+        2256,
+        336
+      ],
+      "id": "11b35052-ff8e-4107-a1f2-f7e649cd70cf",
+      "name": "Scrape a url and get its content",
+      "executeOnce": false,
+      "credentials": {
+        "firecrawlApi": {
+          "id": "0NCOG06PosZApPoD",
+          "name": "Firecrawl account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a highly skilled data extraction assistant. Your task is to find a contact email and phone number from the provided text by following a strict step-by-step process.\n\n**Step 1: Analyze the Text for Clues**\nFirst, I will carefully read the entire text and look for clues. I will pay special attention to patterns like `@`, `.com`, `mailto:`, `tel:`, and phone number formats.\n\n**Step 2: Extract Potential Data**\nBased on my analysis, I will identify the most likely candidate for the email and the phone number.\n-   Potential Email Found: [I will write the email I found here, or 'None' if I found nothing]\n-   Potential Phone Found: [I will write the phone number I found here, or 'None' if I found nothing]\n\n**Step 3: Construct the Final JSON**\nNow, I will construct the final JSON object based on the data I extracted in Step 2. I will only respond with the JSON object and nothing else. If I found no data for a field, I will use `null`.\n\n**Text to Analyze:**\n{{ $json.data.markdown }}\n\n**Final JSON Output:**\n",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2432,
+        336
+      ],
+      "id": "88fc1ea9-d0d4-44a4-8100-a418b68f2908",
+      "name": "Basic LLM Chain",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        528
+      ],
+      "id": "71373226-24cb-4175-93c2-13fd4b265b09",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UsOAlwSuOCQZeztl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8305313a-2774-407d-9438-53062060af3f",
+              "name": "web",
+              "value": "={{ $json.cleaned_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1920,
+        336
+      ],
+      "id": "8caef9ed-c4de-4f00-966e-14f6e36f310d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": 102,
+        "tableId": 532,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 4969,
+              "fieldValue": "={{ $json.name }}"
+            },
+            {
+              "fieldId": 4980,
+              "fieldValue": "={{ $json.address }}"
+            },
+            {
+              "fieldId": 4978,
+              "fieldValue": "={{ $json.rating }}"
+            },
+            {
+              "fieldId": 4979,
+              "fieldValue": "={{ $json.reviews }}"
+            },
+            {
+              "fieldId": 4970,
+              "fieldValue": "={{ $json.cleaned_url }}"
+            },
+            {
+              "fieldId": 4971,
+              "fieldValue": "={{ $json.mail }}"
+            },
+            {
+              "fieldId": 4977,
+              "fieldValue": "={{ $json.tel }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        3456,
+        304
+      ],
+      "id": "b3468082-a69f-4481-90e5-228890c038b5",
+      "name": "Create a row1",
+      "credentials": {
+        "baserowApi": {
+          "id": "fFTKgsMV0r8ZssQK",
+          "name": "Baserow account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Sen bir doğal dil işleme (NLP) ve coğrafi sorgu üretme uzmanısın. Görevin, kullanıcıdan gelen doğal dildeki ifadeyi analiz ederek yazının içinde geçen coğrafi bölgeyi ve mekân türünü belirlemek, bu bölgeyi alt bölgelere ayırmak ve her alt bölge için mekân türünü içeren arama sorgularını üretmektir. Tüm çıktılar JSON formatında verilmelidir. Aşağıdaki adımları eksiksiz uygula:\\n\\n1. 📍 Bölge (Yer) ve Mekân Türü Tespiti:\\nCümledeki ifadeden bölge (şehir, ilçe, semt vb.) ve mekân türü (örnek: restoran, otel, kafe, müze, bar, pastane, spor salonu vs.) bilgilerini çıkar.\\n\\nCoğrafi bölge ve mekân mutlaka anlamlı bir şekilde eşleşmelidir.\\n\\n❗ Bu bilgiler \\\"mekan\\\" ve \\\"bolge\\\" anahtarlarıyla içsel olarak tutulmalı.\\n\\nÖrnek 1:\\n\\\"Paris'te akşam yemeği için restoran\\\"\\n→ \\\"bolge\\\": \\\"Paris\\\"\\n→ \\\"mekan\\\": \\\"restoran\\\"\\n\\nÖrnek 2:\\n\\\"İstanbul'da lüks bir otel arıyorum\\\"\\n→ \\\"bolge\\\": \\\"İstanbul\\\"\\n→ \\\"mekan\\\": \\\"otel\\\"\\n\\nÖrnek 3:\\n\\\"Roma'da canlı müzik dinleyebileceğim barlar\\\"\\n→ \\\"bolge\\\": \\\"Roma\\\"\\n→ \\\"mekan\\\": \\\"bar\\\"\\n\\n2. 🗺️ Alt Bölge Oluşturma:\\nBölgenin coğrafi büyüklüğüne ve popülasyonuna göre alt bölgeleri (semtler, mahalleler veya yerel bölgeler) tespit et.\\n\\nBu alt bölgeler, mümkün olduğunca gerçek ve bilinen semt/mahalle adları olmalıdır.\\n\\nAlt bölge sayısını ölçekli ve istikrarlı bir biçimde seç:\\n\\nKüçük şehir: 10–30 alt bölge\\n\\nOrta şehir: 30–70 alt bölge\\n\\nBüyük şehir (İstanbul, New York, Londra gibi): 100–150+ alt bölge\\n\\nAynı bölgeye her seferinde tutarlı alt bölge listesi kullan (örneğin Paris için her zaman aynı 20+ bölge kullanılmalı).\\n\\n3. 🔍 Arama Sorgularını Oluşturma:\\nHer alt bölge için \\\"AltBölge+mekan\\\" şeklinde bir arama sorgusu üret.\\n\\nKurallar:\\n\\nBoşlukları + karakterine çevir (örnek: \\\"Les Halles restaurant\\\" → \\\"Les+Halles+restaurant\\\").\\n\\nTürkçe karakterleri ASCII karşılıklarına çevir:\\n\\nş → s, ç → c, ö → o, ü → u, ı → i, ğ → g, İ → I\\n\\nNoktalama işaretlerini kaldır.\\n\\nTüm sorgular \\\"query\\\" anahtar kelimesi ile JSON formatında listelenmeli.\\n\\nÖrnek JSON Çıktı (Paris / restoran):\\n\\njson\\nKopyala\\nDüzenle\\n[\\n  {\\\"query\\\": \\\"Les+Halles+restaurant\\\"},\\n  {\\\"query\\\": \\\"Le+Marais+restaurant\\\"},\\n  {\\\"query\\\": \\\"Saint+Germain+restaurant\\\"},\\n  {\\\"query\\\": \\\"Montmartre+restaurant\\\"},\\n  {\\\"query\\\": \\\"Latin+Quarter+restaurant\\\"},\\n  {\\\"query\\\": \\\"Bastille+restaurant\\\"},\\n  {\\\"query\\\": \\\"Canal+Saint+Martin+restaurant\\\"},\\n  {\\\"query\\\": \\\"Champs+Elysees+restaurant\\\"},\\n  {\\\"query\\\": \\\"Belleville+restaurant\\\"},\\n  {\\\"query\\\": \\\"Oberkampf+restaurant\\\"},\\n  {\\\"query\\\": \\\"Batignolles+restaurant\\\"},\\n  {\\\"query\\\": \\\"La+Villette+restaurant\\\"},\\n  {\\\"query\\\": \\\"Pere+Lachaise+restaurant\\\"},\\n  {\\\"query\\\": \\\"Passy+restaurant\\\"},\\n  {\\\"query\\\": \\\"Trocadero+restaurant\\\"},\\n  {\\\"query\\\": \\\"Pigalle+restaurant\\\"},\\n  {\\\"query\\\": \\\"Place+d+Italie+restaurant\\\"},\\n  {\\\"query\\\": \\\"Madeleine+restaurant\\\"},\\n  {\\\"query\\\": \\\"Gobelins+restaurant\\\"},\\n  {\\\"query\\\": \\\"Republique+restaurant\\\"}\\n]\\n4. ⚠️ Ek Kurallar ve İstisnalar:\\nEğer belirli bir bölgeye ait alt bölge verisi yoksa yalnızca genel bölge+mekan sorgusu döndür:\\nÖrnek: [{\\\"query\\\": \\\"Zagreb+otel\\\"}]\\n\\nCümlede birden fazla mekân türü varsa (örneğin “bar ve restoran”), yalnızca en baskın olanı seç.\\n\\nSıfatları ve bağlam detaylarını (lüks, uygun fiyatlı, manzaralı, akşam, brunch vb.) dikkate alma.\\n\\nSadece mekan ve bolge ögelerine dayalı sorgular üret.\\n\\nGiriş diline uygun ASCII dönüşümünü yap (örneğin Türkçe girişlerde Türkçe karakter düzeltmeleri).\\n\\n🎯 Nihai Amaç:\\nKullanıcıdan gelen doğal dilli bir yazı içindeki mekân ve bölge bilgilerinden yola çıkarak, bu bölgenin alt bölgelerine yönelik, mekân temalı ve arama motoruna uygun formatta sorguları JSON listesi olarak üretmektir."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        144,
+        1024
+      ],
+      "id": "70cafb10-3db7-4905-9b67-02a6ce350be3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "numberOfItems": -1,
+          "separator": "\\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserItemList",
+      "typeVersion": 1,
+      "position": [
+        336,
+        1232
+      ],
+      "id": "06893b6b-1c69-4c60-90b8-db27130c8a5b",
+      "name": "Item List Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst output = [];\nfor (const item of items) {\n  const rawData = item.json;\n  let jsonString = Object.values(rawData).join('');\n  jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();\n  try {\n    const queries = JSON.parse(jsonString);\n    for (const query of queries) {\n      output.push({ json: { searchQuery: query.query } });\n    }\n  } catch (e) {\n    output.push({ json: { error: `AI Agent output could not be parsed as JSON: ${e.message}` } });\n  }\n}\nreturn output;"
+      },
+      "id": "a5bd045e-6a27-47c9-95b9-a53ec5285f13",
+      "name": "1. AI Çıktısını Hazırla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -64,
+        1024
+      ],
+      "id": "7c3c00cd-4f7e-494f-910c-0cef02cf8693",
+      "name": "When chat message received",
+      "webhookId": "292f4682-c200-4e39-8ed4-47758db75493"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        144,
+        1232
+      ],
+      "id": "1fff68b2-c9ce-4dc1-9780-0ecfb8f22692",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UsOAlwSuOCQZeztl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        720,
+        1024
+      ],
+      "id": "d4c93312-45c0-4ac7-8e56-b31b34f1fab4",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4b1f380a-73ff-4a9e-b365-98fb60188da5",
+              "leftValue": "={{ $json.web }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        336
+      ],
+      "id": "0bfb0bea-b97d-4cf6-a419-ad271332deba",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9d5faf64-4e73-4d26-918e-07ea52a605f2",
+              "name": "mail",
+              "value": "={{ $json.output.properties.email.description }}",
+              "type": "string"
+            },
+            {
+              "id": "025b4f90-dd8f-4d50-a079-4156aa216be5",
+              "name": "tel",
+              "value": "={{ $json.output.properties.phone.description }}",
+              "type": "string"
+            },
+            {
+              "id": "ae59f49d-c17c-41e0-a8c1-e0f723cad842",
+              "name": "name",
+              "value": "={{ $('Loop Over Items').item.json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2800,
+        320
+      ],
+      "id": "59da7c59-8d37-4958-b633-28957e48b8d4",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "options": {
+          "prompt": "Instructions:\n--------------\n{instructions}\n--------------\nCompletion:\n--------------\n{completion}\n--------------\n\nAbove, the Completion did not satisfy the constraints given in the Instructions.\nError:\n--------------\n{error}\n--------------\n\nPlease try again. Please only respond with an answer that satisfies the constraints laid out in the Instructions:"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserAutofixing",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        512
+      ],
+      "id": "f1c17479-6906-4e9b-ad07-7dcbc6995ac1",
+      "name": "Auto-fixing Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        656
+      ],
+      "id": "9de84183-1c39-4a87-9454-6724ce8d39b7",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UsOAlwSuOCQZeztl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"email\": {\n      \"type\": \"string\",\n      \"description\": \"The contact email address found in the text.\"\n    },\n    \"phone\": {\n      \"type\": \"string\",\n      \"description\": \"The contact phone number found in the text.\"\n    }\n  }\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2592,
+        656
+      ],
+      "id": "2e81596e-5aee-44a5-977a-d74016540e95",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\n    \"name\": \"string\",\n    \"address\": \"string\",\n    \"rating\": \"number\",\n    \"reviews\": \"number\",\n    \"appointment_link\": \"string\",\n    \"email\": \"string\",\n    \"phone\": \"string\"\n  }\n]\n",
+        "autoFix": true,
+        "customizeRetryPrompt": true
+      },
+      "id": "313ff4a8-7f33-4195-b62c-9e14586e78a2",
+      "name": "Structured Output Parser2",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1232,
+        1216
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        1376
+      ],
+      "id": "b875e15c-ac95-44d9-ad5f-647efe033fd3",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UsOAlwSuOCQZeztl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\n\n// Regex'ler\nconst emailRegex = /^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$/;\n// Telefon Regex'i '+' karakterini de kabul ediyor\nconst phoneRegex = /^[\\d\\s\\(\\)\\-\\+]+$/;\n\nlet finalEmail = '';\nlet finalPhone = '';\n\n// 1. E-posta Seçimi ve Doğrulaması\nif (item.email && typeof item.email === 'string' && emailRegex.test(item.email)) {\n  finalEmail = item.email;\n} else if (item.mail && typeof item.mail === 'string' && emailRegex.test(item.mail)) {\n  finalEmail = item.mail;\n}\n\n// 2. Telefon Seçimi, Önceliklendirme ve Doğrulama\nlet internationalPhone = null;\nlet localPhone = null;\n\nif (item.tel && typeof item.tel === 'string' && phoneRegex.test(item.tel)) {\n  if (item.tel.startsWith('+')) {\n    internationalPhone = item.tel;\n  } else {\n    localPhone = item.tel;\n  }\n}\n\nif (item.phone && typeof item.phone === 'string' && phoneRegex.test(item.phone)) {\n  if (item.phone.startsWith('+')) {\n    internationalPhone = item.phone; // Yeni bulunan uluslararası, eskisinin üzerine yazar\n  } else if (!localPhone) { // Sadece başka bir yerel numara yoksa ata\n    localPhone = item.phone;\n  }\n}\n\nfinalPhone = internationalPhone || localPhone || '';\n\n// 3. Sayısal alanları temizle\nif (item.reviews && typeof item.reviews === 'string') {\n  const reviewCount = parseInt(item.reviews.trim(), 10);\n  item.reviews = isNaN(reviewCount) ? null : reviewCount;\n} else if (typeof item.reviews !== 'number') {\n  item.reviews = null;\n}\n\nif (item.rating && typeof item.rating === 'string') {\n  const ratingValue = parseFloat(item.rating.trim());\n  item.rating = isNaN(ratingValue) ? null : ratingValue;\n} else if (typeof item.rating !== 'number') {\n  item.rating = null;\n}\n\n// 4. Sonuçları Baserow'a uygun alan adlarına ata\nitem.mail = finalEmail;\nitem.tel = finalPhone;\n\n// Artık ihtiyaç duyulmayan eski/geçici alanları sil\ndelete item.email;\ndelete item.phone;\n\nreturn item;"
+      },
+      "id": "be62deec-df5c-4acc-8ad0-5a26f5bf7fb2",
+      "name": "Consolidated Cleaner and Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3184,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "url kontorl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Google Maps Data Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Maps Data Extractor": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a binary data for Structured Data Extract",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Initiate a Webhook Notification for Structured Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perform Bright Data Web Request": {
+      "main": [
+        [
+          {
+            "node": "Google Maps Data Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a binary data for Structured Data Extract": {
+      "main": [
+        [
+          {
+            "node": "Write the structured content to disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Consolidated Cleaner and Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "url temizle": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "url kontorl": {
+      "main": [
+        [
+          {
+            "node": "url temizle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape a url and get its content": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "1. AI Çıktısını Hazırla",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item List Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. AI Çıktısını Hazırla": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Perform Bright Data Web Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Scrape a url and get its content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Auto-fixing Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Auto-fixing Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Auto-fixing Output Parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Google Maps Data Extractor",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row1": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "Consolidated Cleaner and Logic": {
+      "main": [
+        [
+          {
+            "node": "Create a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "ad7d8356-da02-456c-8e85-8dfc44702158",
+  "meta": {
+    "templateId": "5443",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbc36faaf9504a19356f63287fa5598bc9b3c797c0a135dbcd9da60a4eea2369"
+  },
+  "id": "VUfdFpOQza47cwFS",
+  "tags": []
+}

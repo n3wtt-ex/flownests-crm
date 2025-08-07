@@ -1,0 +1,107 @@
+{
+  "name": "instantly_reply_ingest_workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instantly-reply",
+        "responseCode": 200,
+        "options": {
+          "responseData": "json",
+          "responseBody": "={{ { status: 'received' } }}"
+        }
+      },
+      "id": "Webhook_Instantly",
+      "name": "Webhook (Instantly Reply)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.headers['x-signature'] ? $env.FLOW_VERIFY_URL : '' }}",
+        "options": {
+          "ignoreResponseCode": true
+        }
+      },
+      "id": "SignatureCheck",
+      "name": "Signature Check (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [560, 160],
+      "notesInFlow": true,
+      "notes": "Opsiyonel: Eğer n8n tarafında da ek bir doğrulama istiyorsanız kullanın. Asıl doğrulama Edge Function'da yapılacak."
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.EDGE_BASE_URL + '/crm/webhooks/instantly/reply' }}",
+        "options": {
+          "ignoreResponseCode": false,
+          "responseFormat": "json",
+          "retryOnFail": true,
+          "maxRetries": 3,
+          "allowUnauthorizedCerts": false,
+          "timeout": 30000,
+          "headerParametersUi": {
+            "parameter": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Idempotency-Key",
+                "value": "={{ $json.headers?.['idempotency-key'] || $json.body?.idempotency_key || '' }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ForwardToEdge",
+      "name": "Forward to Edge Function",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [560, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const text = ($json?.body?.message?.text || '').toLowerCase();\nlet intent = 'interested';\nif (text.includes('price') || text.includes('pricing')) intent = 'interested';\nelse if (text.includes('?')) intent = 'question';\nelse intent = 'interested';\nreturn [{ intent, summary: intent === 'question' ? 'Lead asked a question.' : 'Positive/price-related reply.' }];"
+      },
+      "id": "MockIntent",
+      "name": "Mock Intent (Fallback)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [800, 300],
+      "notesInFlow": true,
+      "notes": "Edge Function zaten intent yazıyor. Bu düğüm, Edge arızasında fallback amaçlıdır."
+    }
+  ],
+  "connections": {
+    "Webhook (Instantly Reply)": {
+      "main": [
+        [
+          {
+            "node": "Forward to Edge Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward to Edge Function": {
+      "main": [
+        [
+          {
+            "node": "Mock Intent (Fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {}
+}

@@ -1,0 +1,30 @@
+# Baserow API cURL Examples (Lookup + Insert)
+# Auth format: Authorization: Token <API_TOKEN>
+
+# 1) Lookup (GET) — check if a row exists by idempotency_key
+curl -X GET "https://baserow.flownests.org/api/database/rows/table/533/?user_field_names=true&filter__idempotency_key__equal=cal_evt_test_002" ^
+  -H "Authorization: Token 4jLhbp4AdDglK1zIO1BHnbdHTFjGKaQH" ^
+  -H "Accept: application/json"
+
+# 2) Insert (POST) — create a new row
+curl -X POST "https://baserow.flownests.org/api/database/rows/table/533/?user_field_names=true" ^
+  -H "Authorization: Token 4jLhbp4AdDglK1zIO1BHnbdHTFjGKaQH" ^
+  -H "Content-Type: application/json" ^
+  -d "{
+    \"idempotency_key\": \"cal_evt_test_002\",
+    \"event\": \"booking.created\",
+    \"booking_id\": \"bk_test_001\",
+    \"primary_email\": \"john@acme.com\",
+    \"title\": \"Discovery Call\",
+    \"start_time\": \"2025-08-05T10:00:00.000Z\",
+    \"end_time\": \"2025-08-05T10:30:00.000Z\",
+    \"pipeline\": \"Default Sales\",
+    \"status\": \"ok\",
+    \"created_at\": \"2025-08-05T10:00:05.000Z\",
+    \"raw_json\": \"{\\\"event\\\":\\\"booking.created\\\",\\\"booking\\\":{\\\"id\\\":\\\"bk_test_001\\\"}}\"
+  }"
+
+# Notes:
+# - Replace cal_evt_test_002 with your dynamic idempotency key.
+# - Ensure Authorization header is exactly: Authorization: Token <API_TOKEN> (not Bearer).
+# - Keep user_field_names=true so field names in JSON match the table's column names.

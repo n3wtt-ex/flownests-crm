@@ -1,0 +1,11 @@
+project_id: crm
+local:
+  ports:
+    api: 54321
+    db: 54325
+    studio: 54323
+    inbucket: 54324
+  compose:
+    db:
+      ports:
+        - "54325:5432"

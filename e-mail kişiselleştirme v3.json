@@ -1,0 +1,770 @@
+{
+  "name": "e-mail kişiselleştirme v3",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    \"firstName\": \"Nazma\",\n    \"lastName\": \"Qurban\",\n    \"jobTitle\": \"Head Of Sales\",\n    \"companyName\": \"Cognism\",\n    \"emailAddress\": \"nazma@cognism.com\",\n    \"number\": \"+44 20 3858 0822\",\n    \"stage\": \"Cold\",\n    \"linkedInURL\": \"https://www.linkedin.com/in/nazmaqurban\",\n    \"websiteURL\": \"https://www.cognism.com\"\n  },\n  {\n    \"firstName\": \"Sudeep\",\n    \"lastName\": \"Goswami\",\n    \"jobTitle\": \"Vice President, Sales\",\n    \"companyName\": \"Tempo Automation\",\n    \"emailAddress\": \"sgoswami@tempoautomation.com\",\n    \"number\": \"650-417-5439\",\n    \"stage\": \"Nurture\",\n    \"linkedInURL\": \"https://www.linkedin.com/in/sudeepgoswami\",\n    \"websiteURL\": \"https://www.tempoautomation.com\"\n  },\n  {\n    \"firstName\": \"Branden\",\n    \"lastName\": \"Baldwin\",\n    \"jobTitle\": \"Sales and Marketing Operations Manager\",\n    \"companyName\": \"Degreed\",\n    \"emailAddress\": \"branden@degreed.com\",\n    \"number\": \"801-425-1346\",\n    \"stage\": \"Meeting Set\",\n    \"linkedInURL\": \"https://www.linkedin.com/in/brandenbaldwin\",\n    \"websiteURL\": \"https://www.degreed.com\"\n  },\n  {\n    \"firstName\": \"Ori\",\n    \"lastName\": \"Yankelev\",\n    \"jobTitle\": \"Vice President Sales\",\n    \"companyName\": \"OwnBackup\",\n    \"emailAddress\": \"ori@ownbackup.com\",\n    \"number\": \"(646) 503-5100\",\n    \"stage\": \"Unresponsive\",\n    \"linkedInURL\": \"https://www.linkedin.com/in/oriyankelev\",\n    \"websiteURL\": \"https://www.ownbackup.com\"\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        160
+      ],
+      "id": "463079a5-b252-413d-880a-beacdb2ac0a8",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM \"Leads_n-mail\" WHERE status IS NULL OR status != 'personalized' LIMIT 10;",
+        "options": {}
+      },
+      "id": "2e62b2dd-4f13-4b63-ba7e-b76068a8c17c",
+      "name": "1. Get Leads from DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        -560,
+        160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "zone": {
+          "__rl": true,
+          "mode": "list",
+          "value": "web_unlocker1"
+        },
+        "country": {
+          "__rl": true,
+          "mode": "list",
+          "value": "us"
+        },
+        "url": "={{ $('Loop Over Leads').item.json.websiteURL }}",
+        "requestOptions": {}
+      },
+      "id": "fa34a883-386d-42a1-9002-e658c01bbd48",
+      "name": "2. Scrape Website",
+      "type": "@brightdata/n8n-nodes-brightdata.brightData",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        0
+      ],
+      "credentials": {
+        "brightdataApi": {
+          "id": "HJWiibpUDDP8QXd2",
+          "name": "BrightData account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=My Company Information:\n{{ JSON.stringify($('Get Company Info From DB').item.json) }}\n\nMerged Scraped Data:\n{{ JSON.stringify($('Merge Website and LinkedIn Data').item.json) }}\n",
+        "options": {
+          "systemMessage": "You are an expert AI Sales Agent specializing in writing hyper-personalized, short, and impactful cold emails. Your goal is to get a positive reply, not to close a deal.\n\n**CRITICAL RULE: You must base your entire analysis and response ONLY on the 'My Company Information' and 'Merged Scraped Data' provided. Do not use any prior knowledge.**\n\nFollow these steps precisely:\n\n1.  **FIND THE TRIGGER EVENT:**\n    *   Analyze the 'Merged Scraped Data', focusing on the LinkedIn information.\n    *   Identify the single most compelling **trigger event** or **pain point**. Examples: a recent promotion, a new job, a specific post they made, a company funding announcement, or a significant skill that aligns with our service. This is the core of your email.\n\n2.  **QUALIFY THE LEAD:**\n    *   Based on the trigger event and company data, decide if they are a good fit for B2B sales automation.\n    *   Output a boolean `true` or `false` for the `qualified` field.\n\n3.  **GENERATE A REASON:**\n    *   Provide a concise reason for your qualification, explicitly mentioning the **trigger event** you identified and what it implies.\n    *   Example: \"The trigger is his recent promotion, which implies a new focus on scaling his team and hitting aggressive targets.\"\n\n4.  **DRAFT THE EMAIL (ONLY IF QUALIFIED):**\n    *   If not qualified, leave `email_body` and `email_subject` as empty strings.\n    *   If qualified, draft the email following these **strict formatting rules**:\n\n    **A. TONE & STYLE:**\n    *   Write like a real person, not a robot. Be direct, confident, and slightly informal.\n    *   The entire email body **MUST NOT EXCEED 60 WORDS AND 3 SENTENCES.** This is a strict limit.\n\n    **B. STRUCTURE (KISS Principle):**\n    *   **Subject Line (`email_subject`):** Make it intriguing and personal. Use the trigger event.\n        *   Good Examples: \"your post about GitOps\", \"quick question about scaling the team\", \"an idea for your new role\"\n    *   **Email Body (`email_body`):**\n        *   **Sentence 1 (The S-Tier Hook):** Your opening line is the most critical part. Based on the trigger event, choose ONE of the following aggressive and personal styles. **Do not just state what you saw (e.g., \"I saw your post\"). Instead, state what it MEANS.**\n            *   **1. The Empathetic Pain Point:** Make a bold, empathetic assumption about a major challenge they are likely facing because of the trigger event. Frame it directly. (e.g., \"Congrats on the new funding! Scaling the sales team must be a nightmare right now.\")\n            *   **2. The Shocking Observation:** Start with a surprising statistic or a bold, slightly provocative observation related to their trigger event. (e.g., \"Saw your post on cold calling. 90% of cold emails are ignored - here's why this one is different.\")\n            *   **3. The Competitor Angle:** If the data allows, subtly reference an industry trend or a competitor's action to create urgency. (e.g., \"Noticed you're hiring SDRs. Your competitor X just automated their entire outreach process.\")\n        *   **Sentence 2 (The Solution):** Briefly connect their pain point/event to a **single, clear benefit** of our service (from 'My Company Information').\n        *   **Sentence 3 (The Value-Driven CTA):** Ask a simple, low-commitment question that offers **concrete value** (e.g., a Loom video, a one-pager, a case study).\n\n    **C. TECHNICAL FORMATTING:**\n    *   The `email_body` MUST be in HTML format (content for `<body>` tag only).\n    *   Use the `gonderen_ismi` field from the 'My Company Information' data as the sender's name.\n\n5.  **OUTPUT FORMAT:**\n    *   You MUST return a single, valid JSON object:\n    ```json\n    {\n      \"qualified\": boolean,\n      \"reason\": \"string\",\n      \"email_subject\": \"string\",\n      \"email_body\": \"string (HTML content)\"\n    }\n    ```\n"
+        }
+      },
+      "id": "4e3ad2d9-06c8-4a0e-bd25-0dbce48b8e5b",
+      "name": "3. Personalization Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1216,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": "public",
+        "table": "Leads_n-mail",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "emailAddress": "={{ $json.emailAddress }}",
+            "status": "personalized",
+            "qualification_reason": "={{ $json.qualification_reason }}",
+            "generated_subject": "={{ $json.generated_subject }}",
+            "generated_body": "={{ $json.generated_body }}",
+            "is_qualified": "={{ $json.is_qualified }}"
+          },
+          "matchingColumns": [
+            "emailAddress"
+          ],
+          "schema": [
+            {
+              "id": "firstName",
+              "displayName": "firstName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "lastName",
+              "displayName": "lastName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "emailAddress",
+              "displayName": "emailAddress",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedInURL",
+              "displayName": "linkedInURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "jobTitle",
+              "displayName": "jobTitle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "companyName",
+              "displayName": "companyName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "websiteURL",
+              "displayName": "websiteURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "businessIndustry",
+              "displayName": "businessIndustry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "number",
+              "displayName": "number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "qualification_reason",
+              "displayName": "qualification_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "generated_subject",
+              "displayName": "generated_subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "generated_body",
+              "displayName": "generated_body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "is_qualified",
+              "displayName": "is_qualified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5fa6927c-6673-448c-9225-75d02958d65a",
+      "name": "4. Save to DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        1776,
+        16
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "e7742e5c-b93f-4121-8c46-d0d258e697fd",
+      "name": "Loop Over Leads",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "d595d350-0254-4b12-b5cd-dd4b38ada0f5",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        240
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UsOAlwSuOCQZeztl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Gelen verileri al\nconst agentOutput = $('3. Personalization Agent').item.json.output;\nconst originalLead = $('Loop Over Leads').item.json;\n\n// 2. AI çıktısını temizle ve JSON'a çevir\n// ```json ... ``` gibi işaretleri kaldır\nconst jsonString = agentOutput.replace(/```json\\n/g, '').replace(/\\n```/g, '');\nconst aiData = JSON.parse(jsonString);\n\n// 3. Orijinal lead verisi ile AI verisini birleştir\nconst combinedData = {\n  ...originalLead, // Orijinal lead'in tüm alanlarını koru\n  is_qualified: aiData.qualified,\n  qualification_reason: aiData.reason,\n  generated_subject: aiData.email_subject,\n  generated_body: aiData.email_body\n};\n\n// 4. Birleştirilmiş veriyi bir sonraki düğüme gönder\nreturn combinedData;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        16
+      ],
+      "id": "442acd13-8b85-4fb3-ae52-9714935cb713",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": true
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -128,
+        352
+      ],
+      "id": "203722b1-a515-4ce0-b3e0-b2604cf4f81e",
+      "name": "Loop Over Items",
+      "retryOnFail": false,
+      "executeOnce": true,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        144,
+        352
+      ],
+      "id": "9ba0f660-a916-46a1-94d4-fe7ad94d2734",
+      "name": "Wait",
+      "webhookId": "eeafaa6b-853c-41f1-9fa4-e262d825390f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7ca9612e-fd45-4f80-9c0c-094635362a7d",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "=ready",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        352
+      ],
+      "id": "13658c1b-4edf-4b80-9317-5c45c2ead5a2",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        848,
+        16
+      ],
+      "id": "5acf3ae2-313d-4531-a257-c5c3cba3040a",
+      "name": "Merge Website and LinkedIn Data"
+    },
+    {
+      "parameters": {
+        "resource": "webScrapper",
+        "operation": "triggerCollectionByUrl",
+        "dataset_id": {
+          "__rl": true,
+          "value": "gd_l1viktl72bvl7bjuj0",
+          "mode": "list",
+          "cachedResultName": "LinkedIn people profiles"
+        },
+        "urls": "=[{\"url\":\"{{ $json.linkedInURL }}\"}]",
+        "requestOptions": {}
+      },
+      "type": "@brightdata/n8n-nodes-brightdata.brightData",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        144
+      ],
+      "id": "17cf85f1-46e7-4562-ac38-df846106066e",
+      "name": "1. Initiate LinkedIn Extraction",
+      "credentials": {
+        "brightdataApi": {
+          "id": "HJWiibpUDDP8QXd2",
+          "name": "BrightData account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "webScrapper",
+        "operation": "monitorProgressSnapshot",
+        "snapshot_id": "={{ $json.snapshot_id }}",
+        "requestOptions": {}
+      },
+      "type": "@brightdata/n8n-nodes-brightdata.brightData",
+      "typeVersion": 1,
+      "position": [
+        272,
+        352
+      ],
+      "id": "ffa3df72-483c-45fa-b6d5-fc76c1877ba1",
+      "name": "Monitor Progress",
+      "credentials": {
+        "brightdataApi": {
+          "id": "HJWiibpUDDP8QXd2",
+          "name": "BrightData account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "webScrapper",
+        "operation": "downloadSnapshot",
+        "snapshot_id": "={{ $json.snapshot_id }}",
+        "requestOptions": {}
+      },
+      "type": "@brightdata/n8n-nodes-brightdata.brightData",
+      "typeVersion": 1,
+      "position": [
+        576,
+        128
+      ],
+      "id": "7d7e3ad1-89e8-4593-ae5a-3e707297b4f1",
+      "name": "3.Get Extraction Result",
+      "credentials": {
+        "brightdataApi": {
+          "id": "HJWiibpUDDP8QXd2",
+          "name": "BrightData account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "116815df-402a-4114-bcd9-71c3b6f1331f",
+              "name": "website_content",
+              "value": "={{ $json }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        0
+      ],
+      "id": "dbe9cfa5-2020-44fe-923c-4891d018eb96",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sirket_bilgisi, gonderen_ismi FROM sirket_profili WHERE id = 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -880,
+        160
+      ],
+      "id": "c82a9b46-50fe-46cb-9386-f7e3a9be53b2",
+      "name": "Get Company Info From DB",
+      "credentials": {
+        "postgres": {
+          "id": "RKq5oN05Cpls2yZn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        160
+      ],
+      "id": "8dd8c25f-c9f5-4bbe-850a-d0ef9a1f64c4",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "1. Get Leads from DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Get Leads from DB": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Scrape Website": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Personalization Agent": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Leads": {
+      "main": [
+        [
+          {
+            "node": "2. Scrape Website",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "1. Initiate LinkedIn Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "3. Personalization Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "4. Save to DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Monitor Progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "3.Get Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Website and LinkedIn Data": {
+      "main": [
+        [
+          {
+            "node": "3. Personalization Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Over Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Initiate LinkedIn Extraction": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor Progress": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3.Get Extraction Result": {
+      "main": [
+        [
+          {
+            "node": "Merge Website and LinkedIn Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge Website and LinkedIn Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company Info From DB": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Company Info From DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "11ec0a0a-501a-4bcb-a805-b258112c4d47",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbc36faaf9504a19356f63287fa5598bc9b3c797c0a135dbcd9da60a4eea2369"
+  },
+  "id": "ZeGijOK6Gtzf0a4z",
+  "tags": []
+}

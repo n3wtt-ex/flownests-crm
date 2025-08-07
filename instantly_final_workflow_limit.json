@@ -1,0 +1,219 @@
+{
+  "name": "Instantly - Final Workflow (Limit Method)",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM leads WHERE status = 'ready_for_campaign';"
+      },
+      "name": "1. Get Ready Leads",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        250,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_DB_CREDENTIAL_ID",
+          "name": "Postgres DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "limit": 1
+      },
+      "name": "2. Get First Lead for Template",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        500,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "campaign",
+        "operation": "create",
+        "campaignName": "Otomatik Kampanya - {{ $now.toFormat('yyyy-MM-dd HH:mm') }}",
+        "scheduleName": "Hafta İçi Mesai Saatleri",
+        "scheduleTimezone": "Europe/Istanbul",
+        "scheduleTimingFrom": "09:00",
+        "scheduleTimingTo": "17:00",
+        "scheduleDays": {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "useAllEmailAccounts": true,
+        "emailSequenceSteps": {
+          "steps": [
+            {
+              "subject": "{{ $json.generated_subject }}",
+              "body": "{{ $json.body_step1 }}"
+            },
+            {
+              "waitDays": 2,
+              "body": "{{ $json.body_step2 }}"
+            },
+            {
+              "waitDays": 5,
+              "body": "{{ $json.body_step3 }}"
+            }
+          ]
+        },
+        "additionalFields": {
+          "stop_on_reply": true
+        }
+      },
+      "name": "3. Create Campaign",
+      "type": "n8n-nodes-instantly.instantly",
+      "typeVersion": 1,
+      "position": [
+        750,
+        200
+      ],
+      "credentials": {
+        "instantlyApi": {
+          "id": "REPLACE_WITH_YOUR_API_CREDENTIAL_ID",
+          "name": "Instantly API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1
+      },
+      "name": "4. Loop Over All Leads",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        500,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "lead",
+        "operation": "addLeadToCampaign",
+        "campaignId": "{{ $('3. Create Campaign').item.json.id }}",
+        "email": "{{ $json.emailAddress }}",
+        "additionalFields": {
+          "first_name": "{{ $json.firstName }}",
+          "last_name": "{{ $json.lastName }}",
+          "company_name": "{{ $json.companyName }}",
+          "website": "{{ $json.websiteURL }}",
+          "phone": "{{ $json.number }}",
+          "custom_variables": {
+            "fields": [
+              {
+                "name": "subject",
+                "value": "{{ $json.generated_subject }}"
+              },
+              {
+                "name": "body_step_1",
+                "value": "{{ $json.body_step1 }}"
+              },
+              {
+                "name": "body_step_2",
+                "value": "{{ $json.body_step2 }}"
+              },
+              {
+                "name": "body_step_3",
+                "value": "{{ $json.body_step3 }}"
+              }
+            ]
+          }
+        }
+      },
+      "name": "5. Add Lead to Campaign",
+      "type": "n8n-nodes-instantly.instantly",
+      "typeVersion": 1,
+      "position": [
+        750,
+        400
+      ],
+      "credentials": {
+        "instantlyApi": {
+          "id": "REPLACE_WITH_YOUR_API_CREDENTIAL_ID",
+          "name": "Instantly API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE leads SET status = 'in_campaign' WHERE id = {{ $('5. Add Lead to Campaign').item.json.lead.id }};"
+      },
+      "name": "6. Update Lead Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1000,
+        400
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_DB_CREDENTIAL_ID",
+          "name": "Postgres DB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "1. Get Ready Leads": {
+      "main": [
+        [
+          {
+            "node": "2. Get First Lead for Template",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "4. Loop Over All Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Get First Lead for Template": {
+      "main": [
+        [
+          {
+            "node": "3. Create Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Loop Over All Leads": {
+      "main": [
+        [
+          {
+            "node": "5. Add Lead to Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Add Lead to Campaign": {
+      "main": [
+        [
+          {
+            "node": "6. Update Lead Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

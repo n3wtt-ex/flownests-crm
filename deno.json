@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window", "dom", "dom.iterable"]
+  },
+  "imports": {
+    "postgres/": "https://deno.land/x/postgres@v0.17.2/"
+  },
+  "tasks": {
+    "instantly:dev": "deno run -A --env ./crm/functions/crm-webhooks/instantly-reply/dev_server.ts",
+    "instantly:index": "deno run -A --env ./crm/functions/crm-webhooks/instantly-reply/index.ts"
+  }
+}

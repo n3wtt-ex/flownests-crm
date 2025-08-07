@@ -1,0 +1,145 @@
+{
+  "name": "calcom_booking_ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Normalize incoming Cal.com booking\nconst input = items[0].json;\nconst body = input.body || input;\nconst headers = input.headers || {};\n\nconst booking = body.booking || {};\nconst attendees = Array.isArray(booking.attendees) ? booking.attendees : [];\nconst primary = attendees[0] || {};\n\nconst idempotencyHeader = headers['Idempotency-Key'] || headers['idempotency-key'] || headers['IDEMPOTENCY-KEY'];\nconst idempotency = body.idempotency_key || idempotencyHeader || ('cal_evt_' + Date.now());\n\nconst normalized = {\n  event: body.event || 'booking.created',\n  booking: {\n    id: booking.id || null,\n    title: booking.title || null,\n    start_time: booking.start_time || null,\n    end_time: booking.end_time || null,\n    attendees,\n    metadata: booking.metadata || {}\n  },\n  idempotency_key: idempotency,\n  primary_email: primary.email || null\n};\n\nreturn [{ normalized }];"
+      },
+      "id": "6b42965a-54a0-4450-a0fc-d8b6e36b7db0",
+      "name": "Code: Parse + Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2144,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"ok\",\"idempotency_key\":\"{{$json.idempotency_key}}\",\"booking_id\":\"{{$json.booking_id}}\"}",
+        "options": {}
+      },
+      "id": "229cd3a7-6f02-44ca-8818-37764669622f",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1552,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code: Build Baserow Payload1 (minimal patch)\n// Only trims milliseconds to match '...Z' format like: 2025-08-01T08:47:01Z\n// Paste entire content into the \"Code: Build Baserow Payload1\" node.\n\nconst norm = $item(0, 'Code: Parse + Normalize').$json.normalized || {};\nconst booking = norm.booking || {};\nconst attendees = Array.isArray(booking.attendees) ? booking.attendees : [];\nconst primary = attendees[0] || {};\n\n// Keep original ISO but remove milliseconds: \"2025-08-05T10:00:00.000Z\" -> \"2025-08-05T10:00:00Z\"\nfunction trimMs(iso) {\n  if (!iso || typeof iso !== 'string') return '';\n  // If it already has no milliseconds just return as is\n  // Else replace \".sssZ\" with \"Z\"\n  return iso.replace(/\\.\\d{3}Z$/, 'Z');\n}\n\nconst start_time = trimMs(booking.start_time);\nconst end_time = trimMs(booking.end_time);\n\nreturn [{\n  idempotency_key: norm.idempotency_key || '',\n  event: norm.event || 'booking.created',\n  booking_id: booking.id || '',\n  primary_email: norm.primary_email || primary.email || '',\n  title: booking.title || '',\n  start_time,\n  end_time,\n  pipeline: (booking.metadata && booking.metadata.pipeline) ? booking.metadata.pipeline : '',\n  status: 'ok',\n  created_at: new Date().toISOString(),\n  raw_json: JSON.stringify(norm)\n}];\n"
+      },
+      "id": "5b4b9d74-01c0-4516-a4d4-2b09e329fc55",
+      "name": "Code: Build Baserow Payload1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1952,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": 103,
+        "tableId": 533,
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -1760,
+        624
+      ],
+      "id": "90284fdc-38bf-430a-a9c3-bb3f1cfb80b2",
+      "name": "Create a row1",
+      "credentials": {
+        "baserowApi": {
+          "id": "fFTKgsMV0r8ZssQK",
+          "name": "Baserow account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm/n8n/calcom/booking",
+        "responseMode": "lastNode",
+        "options": {
+          "binaryData": false
+        }
+      },
+      "id": "3f195530-2a7d-44c4-9cb0-8525309d0645",
+      "name": "Webhook: Cal.com Booking1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -2352,
+        624
+      ],
+      "webhookId": "calcom-booking-inbound"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code: Parse + Normalize": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Baserow Payload1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Baserow Payload1": {
+      "main": [
+        [
+          {
+            "node": "Create a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row1": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Cal.com Booking1": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse + Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d177518e-8732-4d2d-bb57-d2c78fbf3761",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbc36faaf9504a19356f63287fa5598bc9b3c797c0a135dbcd9da60a4eea2369"
+  },
+  "id": "pFRb17eVFEUaGLqB",
+  "tags": []
+}
