@@ -2,9 +2,15 @@
   "version": 2,
   "redirects": [
     {
-      "source": "https://www.flownests.org/(.*)",
+      "source": "/(.*)",
       "destination": "https://flownests.org/$1",
-      "permanent": true
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "www.flownests.org"
+        }
+      ]
     }
   ]
 }
