@@ -4,9 +4,10 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "node_modules/.bin/next build",
+    "build": "next build",
     "start": "next start -p 3000",
-    "lint": "echo \"no lint configured\""
+    "lint": "echo \"no lint configured\"",
+    "postinstall": "chmod +x node_modules/.bin/next"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.54.0",
