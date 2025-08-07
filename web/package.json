@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "echo \"no lint configured\"",
-    "postinstall": "chmod +x node_modules/.bin/next"
+    "postinstall": "npm rebuild"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.54.0",
