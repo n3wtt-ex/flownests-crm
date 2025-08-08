@@ -76,10 +76,6 @@ export default function CrmKanbanPage() {
     };
   }, []);
 
-  // Add console logs here to inspect stages and deals
-  console.log('CrmKanbanPage: stages state', stages);
-  console.log('CrmKanbanPage: deals state', deals);
-
   const dealsByStage = useMemo(() => groupDealsByStage(deals), [deals]);
 
   // Live conversion snapshot — recompute on local deals/stages change (optimistic update dahil)

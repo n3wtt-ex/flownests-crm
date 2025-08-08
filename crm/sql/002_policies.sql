@@ -23,8 +23,17 @@
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC;
 
+-- Grant SELECT privileges to the 'anon' role for client-side reads
+GRANT SELECT ON TABLE public.contacts TO anon;
+GRANT SELECT ON TABLE public.companies TO anon;
+GRANT SELECT ON TABLE public.deals TO anon;
+GRANT SELECT ON TABLE public.pipelines TO anon;
+GRANT SELECT ON TABLE public.pipeline_stages TO anon;
+GRANT SELECT ON TABLE public.activities TO anon;
+GRANT SELECT ON TABLE public.owners TO anon;
+
 -- Grant minimal schema usage
-GRANT USAGE ON SCHEMA public TO app_user, readonly;
+GRANT USAGE ON SCHEMA public TO app_user, readonly, anon;
 
 -- Readonly: SELECT-only on data tables
 GRANT SELECT ON TABLE public.contacts TO readonly;

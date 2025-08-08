@@ -84,16 +84,6 @@ export default function Kanban({ stages, dealsByStage, onCardClick, onStageDrop 
     }
   }, [onStageDrop, optimisticMove, rollbackMove]);
 
-  // Temporary render check
-  console.log('Kanban component is rendering. Number of stages:', stages.length);
-  if (stages.length === 0) {
-    return (
-      <div style={{ padding: 16, border: '1px dashed red', margin: 16 }}>
-        Kanban component rendered, but no stages to display.
-      </div>
-    );
-  }
-
   return (
     <div className="crm-kanban-root">
       <div className="crm-kanban-row">
