@@ -6,11 +6,12 @@ import ActivityTimeline from '../../../crm/components/ActivityTimeline';
 import ContactQuick from '../../../crm/components/ContactQuick';
 import {
   getActivitiesFor,
-  getContactForDeal,
+  getContact,
   getDealDetail,
-  getStageName,
   getPipelineStages,
-  updateDeal,
+  updateDealStage,
+  updateContactStatus,
+  getCalendarLink,
   Deal,
   Contact,
   Stage,
@@ -39,17 +40,22 @@ export default function DealPage({ params }: { params: { id: string } }) {
         if (!mounted) return;
         setDeal(d);
 
-        const [sn, acts, cnt, st] = await Promise.all([
-          getStageName(DEFAULT_PIPELINE_ID, d.stage_id),
+        const [acts, st] = await Promise.all([
           getActivitiesFor('deal', d.id),
-          getContactForDeal(d.id),
           getPipelineStages(DEFAULT_PIPELINE_ID),
         ]);
         if (!mounted) return;
-        setStageName(sn);
         setActivities(acts);
-        setContact(cnt);
         setStages(st);
+        setStageName(st.find(s => s.id === d.stage_id)?.name);
+
+        // Fetch contact separately as it depends on deal.contact_id
+        if (d.contact_id) {
+          const cnt = await getContact(d.contact_id);
+          if (!mounted) return;
+          setContact(cnt);
+        }
+
       } catch (e: any) {
         if (!mounted) return;
         setErr(e?.message || 'Unknown error');
@@ -68,11 +74,10 @@ export default function DealPage({ params }: { params: { id: string } }) {
     try {
       // optimistic handled inside ContactQuick local state; here just call API if contact exists
       if (!contact || contact.id !== contactId) return { ok: false, error: 'Contact not loaded' };
-      const { updateContactStatus } = await import('../../../services/crmApi');
       const res = await updateContactStatus(contactId, 'interested');
       if (!res.ok) return { ok: false, error: res.error };
       // sync page-level contact state
-      setContact((prev) => (prev && prev.id === contactId ? { ...prev, reply_status: 'interested' } : prev));
+      setContact((prev: Contact | undefined) => (prev && prev.id === contactId ? { ...prev, reply_status: 'interested' } : prev));
       return { ok: true };
     } catch (e: any) {
       return { ok: false, error: e?.message || 'Failed to update' };
@@ -82,10 +87,9 @@ export default function DealPage({ params }: { params: { id: string } }) {
   const handleMarkNotInterested = useCallback(async (contactId: string) => {
     try {
       if (!contact || contact.id !== contactId) return { ok: false, error: 'Contact not loaded' };
-      const { updateContactStatus } = await import('../../../services/crmApi');
       const res = await updateContactStatus(contactId, 'not_interested');
       if (!res.ok) return { ok: false, error: res.error };
-      setContact((prev) => (prev && prev.id === contactId ? { ...prev, reply_status: 'not_interested' } : prev));
+      setContact((prev: Contact | undefined) => (prev && prev.id === contactId ? { ...prev, reply_status: 'not_interested' } : prev));
       return { ok: true };
     } catch (e: any) {
       return { ok: false, error: e?.message || 'Failed to update' };
@@ -94,7 +98,6 @@ export default function DealPage({ params }: { params: { id: string } }) {
 
   const handleSendCalendarLink = useCallback(async (contactId: string) => {
     try {
-      const { getCalendarLink } = await import('../../../services/crmApi');
       const res = await getCalendarLink(contactId);
       if (!res.ok) return { ok: false, error: 'Unable to generate link' };
       return { ok: true, url: res.url };
@@ -122,23 +125,32 @@ export default function DealPage({ params }: { params: { id: string } }) {
               onSendCalendarLink={handleSendCalendarLink}
             />
           ) : undefined}
-          getStagesForSelect={() => stages.map((s) => ({ id: s.id, name: s.name }))}
+          getStagesForSelect={() => stages.map((s: Stage) => ({ id: s.id, name: s.name }))}
           onSave={async (update) => {
-            // optimistic update of local state
             const prev = deal;
             const next = { ...prev, ...update };
             setDeal(next);
-            const res = await updateDeal({ ...update, id: deal.id });
+
+            let res: { ok: boolean; error?: string } = { ok: true };
+
+            if (typeof update.stage_id !== 'undefined' && deal) {
+              res = await updateDealStage(deal.id, update.stage_id);
+            } else {
+              console.warn("Only stage_id updates are supported by updateDealStage. Other fields in 'update' will not be persisted.");
+            }
+
             if (!res.ok) {
-              // rollback on error
               setDeal(prev);
               return { ok: false, error: res.error };
             }
-            // sync any normalized value from server (e.g., amount number coercion)
-            setDeal(res.deal || next);
-            // update computed stage name if stage changed
+
+            const updatedDeal = await getDealDetail(dealId);
+            if (updatedDeal) {
+              setDeal(updatedDeal);
+            }
+
             if (typeof update.stage_id !== 'undefined') {
-              const sn = await getStageName(DEFAULT_PIPELINE_ID, update.stage_id);
+              const sn = stages.find((s: Stage) => s.id === update.stage_id)?.name;
               setStageName(sn);
             }
             return { ok: true };

@@ -20,6 +20,9 @@
       "react",
       "node"
     ],
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
     "incremental": true,
     "esModuleInterop": true,
     "plugins": [

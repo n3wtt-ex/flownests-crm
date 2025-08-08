@@ -4,7 +4,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database, Tables } from './supabase.types'
 
-type DealCard = {
+export type DealCard = { // Exported
   id: string
   title: string
   company?: string | null
@@ -14,16 +14,16 @@ type DealCard = {
   stage_id: string
 }
 
-type Stage = {
+export type Stage = { // Exported
   id: string
   name: string
   order_index: number
   probability: number | null
 }
 
-type Activity = Tables<'activities'>
-type Deal = Tables<'deals'>
-type Contact = Tables<'contacts'>
+export type Activity = Tables<'activities'> // Exported
+export type Deal = Tables<'deals'> // Exported
+export type Contact = Tables<'contacts'> // Exported
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -200,6 +200,21 @@ export async function updateDealStage(dealId: string, nextStageId: string): Prom
   const { error } = await supabase.from('deals').update({ stage_id: nextStageId }).eq('id', dealId)
   if (error) return { ok: false, error: error.message }
   return { ok: true }
+}
+
+export async function updateContactStatus(contactId: string, status: 'interested' | 'not_interested'): Promise<{ ok: boolean; error?: string }> {
+  const supabase = getClient();
+  if (!supabase) return { ok: true };
+
+  const { error } = await supabase.from('contacts').update({ reply_status: status }).eq('id', contactId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function getCalendarLink(contactId: string): Promise<{ ok: boolean; url?: string; error?: string }> {
+  // This is a mock implementation. In a real app, you'd generate a unique link
+  // or fetch it from a calendar service.
+  return { ok: true, url: `https://cal.com/your-username/${contactId}` };
 }
 
 // Helper to detect env presence
