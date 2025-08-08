@@ -140,6 +140,7 @@ create index if not exists idx_webhooks_log_idem on webhooks_log(idempotency_key
 create or replace function set_updated_at()
 returns trigger as $$
 begin
+  SET search_path = public;
   new.updated_at = now();
   return new;
 end;
