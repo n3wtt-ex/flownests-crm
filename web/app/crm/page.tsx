@@ -111,7 +111,7 @@ export default function CrmKanbanPage() {
 
   const handleCardClick = (dealId: string) => {
     // App Router navigation
-    window.location.href = `/app/crm/deal/${dealId}`;
+    window.location.href = `/crm/deal/${dealId}`;
   };
 
   return (
