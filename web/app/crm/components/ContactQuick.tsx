@@ -1,15 +1,7 @@
 import React, { useCallback, useState } from 'react';
+import type { Tables } from '../../services/supabase.types';
 
-export type Contact = {
-  id: string;
-  full_name?: string;
-  email?: string;
-  title?: string;
-  linkedin_url?: string;
-  website?: string;
-  reply_status?: string;
-  reply_summary?: string;
-};
+export type Contact = Tables<'contacts'>;
 
 export function ContactQuick({
   contact,

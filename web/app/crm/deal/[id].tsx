@@ -28,7 +28,7 @@ function getDealIdFromPath(): string | null {
 export default function DealPage() {
   const [deal, setDeal] = useState<Deal | null>(null);
   const [stageName, setStageName] = useState<string | undefined>(undefined);
-  const [contact, setContact] = useState<Contact | undefined>(undefined);
+  const [contact, setContact] = useState<Contact | null>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -42,11 +42,15 @@ export default function DealPage() {
         const id = getDealIdFromPath();
         if (!id) throw new Error('Deal id not found in URL');
         const d = await getDealDetail(id);
+        
+        if (!d) throw new Error('Deal not found');
+        
         if (!mounted) return;
         setDeal(d);
 
         const [sn, acts, cnt] = await Promise.all([
-          getStageName(DEFAULT_PIPELINE_ID, d.stage_id),
+          // getStageName fonksiyonunun sadece 1 parametre aldığını varsayıyoruz
+          getStageName(d.stage_id), // İkinci parametreyi kaldırdık
           getActivitiesFor('deal', d.id),
           getContactForDeal(d.id),
         ]);

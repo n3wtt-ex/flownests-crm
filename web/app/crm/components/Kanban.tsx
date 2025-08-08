@@ -1,9 +1,8 @@
 ﻿'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import type { Stage, DealCard } from '../../services/crmApi';
 
-type Stage = { id: string; name: string; order_index: number };
-type DealCard = { id: string; title: string; stage_id: string; amount?: number; currency?: string };
 type DealsByStage = Record<string, DealCard[]>;
 
 type KanbanProps = {

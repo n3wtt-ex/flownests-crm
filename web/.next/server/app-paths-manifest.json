@@ -1,5 +1,5 @@
 {
-  "/crm/deal/[id]/page": "app/crm/deal/[id]/page.js",
-  "/page": "app/page.js",
-  "/crm/page": "app/crm/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/crm/page": "app/crm/page.js",
+  "/page": "app/page.js"
 }

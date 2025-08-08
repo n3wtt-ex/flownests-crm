@@ -16,10 +16,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/crm/page.js"
     ],
-    "/crm/deal/[id]/page": [
+    "/crm/error": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/crm/deal/[id]/page.js"
+      "static/chunks/app/crm/error.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

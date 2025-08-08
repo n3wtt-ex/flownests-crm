@@ -1,26 +1,18 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import type { Tables } from '../../services/supabase.types';
 
-export type Deal = {
-  id: string;
-  title: string;
-  amount?: number;
-  currency?: string;
-  stage_id: string;
-  close_date?: string;
-  source?: string;
-  company_id?: string;
-  contact_id?: string;
-};
+export type Deal = Tables<'deals'>;
+export type Contact = Tables<'contacts'>;
+export type Stage = Tables<'pipeline_stages'>;
 
 export type DealDetailProps = {
   deal: Deal;
-  stageName?: string;
-  companyName?: string;
-  contactName?: string;
-  children?: React.ReactNode; // ActivityTimeline
-  rightPanel?: React.ReactNode; // ContactQuick
+  stageName?: string | null;
+  companyName?: string | null;
+  contactName?: string | null;
+  children?: React.ReactNode;
+  rightPanel?: React.ReactNode;
 
-  // Sprint 2 inline edit handlers (optional)
   onSave?: (update: Partial<Deal> & { id: string }) => Promise<{ ok: boolean; error?: string }>|void;
   getStagesForSelect?: () => Array<{ id: string; name: string }>;
 };
@@ -46,9 +38,9 @@ export function DealDetail({
     setDraft({
       id: deal.id,
       title: deal.title,
-      amount: deal.amount,
-      currency: deal.currency,
-      close_date: deal.close_date,
+      amount: deal.amount ?? undefined,
+      currency: deal.currency ?? undefined,
+      close_date: deal.close_date ?? undefined,
       stage_id: deal.stage_id,
     });
   }, [deal]);
@@ -106,7 +98,7 @@ export function DealDetail({
               <input
                 type="text"
                 defaultValue={deal.title}
-                onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                onChange={(e) => setDraft((d: Partial<Deal>) => ({ ...d, title: e.target.value }))}
               />
               <button onClick={applySave}>Kaydet</button>
               <button onClick={cancelEdit} className="muted">İptal</button>
@@ -129,9 +121,9 @@ export function DealDetail({
                 <span className="edit-row">
                   <select
                     defaultValue={deal.stage_id}
-                    onChange={(e) => setDraft((d) => ({ ...d, stage_id: e.target.value }))}
+                    onChange={(e) => setDraft((d: Partial<Deal>) => ({ ...d, stage_id: e.target.value }))}
                   >
-                    {stagesForSelect.map((s) => (
+                    {stagesForSelect.map((s: { id: string; name: string }) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
@@ -152,15 +144,15 @@ export function DealDetail({
                 <span className="edit-row">
                   <input
                     type="number"
-                    defaultValue={typeof deal.amount === 'number' ? String(deal.amount) : ''}
-                    onChange={(e) => setDraft((d) => ({ ...d, amount: Number(e.target.value) }))}
+                    defaultValue={deal.amount ?? ''}
+                    onChange={(e) => setDraft((d: Partial<Deal>) => ({ ...d, amount: Number(e.target.value) }))}
                   />
                   <button onClick={applySave}>Kaydet</button>
                   <button onClick={cancelEdit} className="muted">İptal</button>
                 </span>
               ) : (
                 <span onDoubleClick={() => beginEdit('amount')} title="Çift tıkla ve düzenle">
-                  {typeof deal.amount === 'number' ? `${deal.amount} ${deal.currency || 'USD'}` : '—'}
+                  {deal.amount !== null ? `${deal.amount} ${deal.currency || 'USD'}` : '—'}
                 </span>
               )}
             </div>
@@ -176,7 +168,7 @@ export function DealDetail({
                     onChange={(e) => {
                       const raw = e.target.value;
                       // normalize to YYYY-MM-DD
-                      setDraft((d) => ({ ...d, close_date: raw ? raw : undefined }));
+                      setDraft((d: Partial<Deal>) => ({ ...d, close_date: raw ? raw : null }));
                     }}
                   />
                   <button onClick={applySave}>Kaydet</button>
@@ -197,7 +189,7 @@ export function DealDetail({
             )}
 
             {/* Company */}
-            {companyName ? (
+            {companyName !== null && companyName !== undefined ? (
               <div>
                 <b>Company:</b> {companyName}
               </div>
@@ -206,7 +198,7 @@ export function DealDetail({
             )}
 
             {/* Contact */}
-            {contactName ? (
+            {contactName !== null && contactName !== undefined ? (
               <div>
                 <b>Contact:</b> {contactName}
               </div>

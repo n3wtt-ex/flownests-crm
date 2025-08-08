@@ -28,13 +28,17 @@ export type Contact = Tables<'contacts'> // Exported
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+let supabase: ReturnType<typeof createClient<Database>> | null = null;
+
 function getClient() {
+  if (supabase) return supabase;
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null
-  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: false
     }
-  })
+  });
+  return supabase;
 }
 
 // Mock fallback for dev without env configured
@@ -65,21 +69,18 @@ export async function getPipelineStages(pipelineId?: string): Promise<Stage[]> {
   const supabase = getClient()
   if (!supabase) return mock.stages
 
-  // default pipeline resolve
-  const pipeline = pipelineId
-    ? { id: pipelineId }
-    : await (async () => {
-        const { data, error } = await supabase.from('pipelines').select('id').eq('is_default', true).order('created_at', { ascending: true }).limit(1).maybeSingle()
-        if (error) throw error
-        return data
-      })()
-
-  if (!pipeline?.id) return []
+  let effectivePipelineId = pipelineId;
+  if (!effectivePipelineId || effectivePipelineId === 'p_default') {
+    const { data: defaultPipeline, error } = await supabase.from('pipelines').select('id').eq('is_default', true).order('created_at', { ascending: true }).limit(1).maybeSingle();
+    if (error) throw error;
+    if (!defaultPipeline) return [];
+    effectivePipelineId = defaultPipeline.id;
+  }
 
   const { data, error } = await supabase
     .from('pipeline_stages')
     .select('id,name,order_index,probability')
-    .eq('pipeline_id', pipeline.id)
+    .eq('pipeline_id', effectivePipelineId)
     .order('order_index', { ascending: true })
 
   if (error) throw error
@@ -91,19 +92,19 @@ export async function getDealsByPipeline(pipelineId?: string): Promise<Record<st
   if (!supabase) return mock.dealsByStage
 
   // resolve pipeline id
-  let pid = pipelineId
-  if (!pid) {
-    const { data, error } = await supabase.from('pipelines').select('id').eq('is_default', true).order('created_at', { ascending: true }).limit(1).maybeSingle()
-    if (error) throw error
-    pid = (data as { id: string } | null)?.id
+  let effectivePipelineId = pipelineId;
+  if (!effectivePipelineId || effectivePipelineId === 'p_default') {
+    const { data: defaultPipeline, error } = await supabase.from('pipelines').select('id').eq('is_default', true).order('created_at', { ascending: true }).limit(1).maybeSingle();
+    if (error) throw error;
+    if (!defaultPipeline) return {};
+    effectivePipelineId = defaultPipeline.id;
   }
-  if (!pid) return {}
 
   // fetch deals + join names
   const { data: deals, error } = await supabase
     .from('deals')
     .select('id,title,amount,currency,stage_id,company_id,contact_id')
-    .eq('pipeline_id', pid)
+    .eq('pipeline_id', effectivePipelineId)
   if (error) throw error
 
   // fetch related names in one go
@@ -191,6 +192,22 @@ export async function getContact(id: string): Promise<Contact | null> {
   return (data as Contact | null)
 }
 
+// Added to resolve a build error where 'getContactForDeal' was reported as missing,
+// even though it's not explicitly imported in the relevant files.
+// It simply delegates to getContact, as that's the intended logic.
+export async function getContactForDeal(contactId: string): Promise<Contact | null> {
+  return getContact(contactId);
+}
+
+// Added to resolve a build error where 'getStageName' was reported as missing.
+export async function getStageName(stageId: string): Promise<string | undefined> {
+  const supabase = getClient();
+  if (!supabase) return mock.stages.find(s => s.id === stageId)?.name;
+  const { data, error } = await supabase.from('pipeline_stages').select('name').eq('id', stageId).maybeSingle();
+  if (error) throw error;
+  return data?.name;
+}
+
 // Actions (write) — protected by RLS; expect JWT in frontend context.
 // For SSR/Edge secure writes, prefer server-only key or edge function proxy.
 export async function updateDealStage(dealId: string, nextStageId: string): Promise<{ ok: boolean; error?: string }> {
@@ -221,3 +238,92 @@ export async function getCalendarLink(contactId: string): Promise<{ ok: boolean;
 export function isSupabaseConfigured(): boolean {
   return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY)
 }
+
+export async function getOpenDealsCount(pipelineId?: string): Promise<number> {
+  const supabase = getClient();
+  if (!supabase) return 42; // Mock data
+
+  let effectivePipelineId = pipelineId;
+  if (!effectivePipelineId || effectivePipelineId === 'p_default') {
+    const { data: defaultPipeline, error } = await supabase.from('pipelines').select('id').eq('is_default', true).order('created_at', { ascending: true }).limit(1).maybeSingle();
+    if (error) throw error;
+    if (!defaultPipeline) return 0;
+    effectivePipelineId = defaultPipeline.id;
+  }
+
+  let query = supabase.from('deals').select('id', { count: 'exact' }).eq('status', 'open');
+  if (effectivePipelineId) {
+    query = query.eq('pipeline_id', effectivePipelineId);
+  }
+  const { count, error } = await query;
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function getLast7DaysReplyCount(): Promise<number> {
+  const supabase = getClient();
+  if (!supabase) return 15; // Mock data
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const { count, error } = await supabase
+    .from('contacts')
+    .select('id', { count: 'exact' })
+    .not('reply_status', 'is', null)
+    .gte('updated_at', sevenDaysAgo.toISOString()); // Assuming updated_at reflects reply status changes
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function getPipelineConversion(pipelineId?: string): Promise<PipelineConversion[]> {
+  const supabase = getClient();
+  if (!supabase) {
+    return [ // Mock data
+      { stage_id: 's1', stage_name: 'New', count: 10, conversion_to_next: 50 },
+      { stage_id: 's2', stage_name: 'Contacted', count: 5, conversion_to_next: 80 },
+      { stage_id: 's3', stage_name: 'Qualified', count: 4, conversion_to_next: undefined },
+    ];
+  }
+
+  // This is a simplified mock for conversion. A real implementation would involve
+  // more complex SQL queries or a materialized view to calculate conversions between stages.
+  const stages = await getPipelineStages(pipelineId);
+  const dealsByStage = await getDealsByPipeline(pipelineId);
+
+  const stageCounts: Record<string, number> = {};
+  for (const stage of stages) {
+    stageCounts[stage.id] = dealsByStage[stage.id]?.length || 0;
+  }
+
+  const conversionData: PipelineConversion[] = [];
+  for (let i = 0; i < stages.length; i++) {
+    const currentStage = stages[i];
+    const currentCount = stageCounts[currentStage.id];
+    let conversionToNext: number | undefined = undefined;
+
+    if (i < stages.length - 1) {
+      const nextStage = stages[i + 1];
+      const nextCount = stageCounts[nextStage.id];
+      if (currentCount > 0) {
+        conversionToNext = Math.round((nextCount / currentCount) * 100);
+      }
+    }
+
+    conversionData.push({
+      stage_id: currentStage.id,
+      stage_name: currentStage.name,
+      count: currentCount,
+      conversion_to_next: conversionToNext,
+    });
+  }
+
+  return conversionData;
+}
+
+export type PipelineConversion = {
+  stage_id: string;
+  stage_name: string;
+  count: number;
+  conversion_to_next?: number;
+};

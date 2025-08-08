@@ -9,35 +9,28 @@ import {
   getOpenDealsCount,
   getLast7DaysReplyCount,
   getPipelineConversion,
-  type Deal,
-  type Stage,
-  type PipelineConversion,
+  Deal,
+  Stage,
+  PipelineConversion,
+  DealCard,
 } from '../services/crmApi';
 
 const DEFAULT_PIPELINE_ID = 'p_default';
 
-type DealCard = { id: string; title: string; stage_id: string; amount?: number; currency?: string };
 type DealsByStage = Record<string, DealCard[]>;
 
-function groupDealsByStage(deals: Deal[]): DealsByStage {
+function groupDealsByStage(deals: DealCard[]): DealsByStage {
   const out: DealsByStage = {};
   for (const d of deals) {
-    const card: DealCard = {
-      id: d.id,
-      title: d.title,
-      amount: d.amount,
-      currency: d.currency,
-      stage_id: d.stage_id,
-    };
     if (!out[d.stage_id]) out[d.stage_id] = [];
-    out[d.stage_id].push(card);
+    out[d.stage_id].push(d);
   }
   return out;
 }
 
 export default function CrmKanbanPage() {
   const [stages, setStages] = useState<Stage[]>([]);
-  const [deals, setDeals] = useState<Deal[]>([]);
+  const [deals, setDeals] = useState<DealCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
@@ -52,7 +45,7 @@ export default function CrmKanbanPage() {
       setLoading(true);
       setErr(null);
       try {
-        const [st, dl, openCnt, last7, conv] = await Promise.all([
+        const [st, dealsResponse, openCnt, last7, conv] = await Promise.all([
           getPipelineStages(DEFAULT_PIPELINE_ID),
           getDealsByPipeline(DEFAULT_PIPELINE_ID),
           getOpenDealsCount(DEFAULT_PIPELINE_ID),
@@ -61,7 +54,12 @@ export default function CrmKanbanPage() {
         ]);
         if (!mounted) return;
         setStages(st);
-        setDeals(dl);
+        
+        // If getDealsByPipeline returns grouped data, flatten it to Deal array
+        const flatDeals = Array.isArray(dealsResponse) 
+          ? dealsResponse 
+          : Object.values(dealsResponse).flat();
+        setDeals(flatDeals);
         setOpenDealsCount(openCnt);
         setLast7Replies(last7);
         setConversion(conv);
@@ -104,7 +102,7 @@ export default function CrmKanbanPage() {
   // Handle drop → call mock API for now
   const handleStageDrop = useCallback(async (dealId: string, fromStageId: string, toStageId: string) => {
     // optimistic handled in Kanban; we just call API and return status
-    const res = await updateDealStage(dealId, toStageId, { occurredAtISO: new Date().toISOString() });
+    const res = await updateDealStage(dealId, toStageId);
     if (!res.ok) return { ok: false, error: res.error };
     // sync local deals state to reflect server (mock) update
     setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, stage_id: toStageId } : d)));
@@ -150,10 +148,10 @@ export default function CrmKanbanPage() {
           </div>
         </div>
       )}
-      {loading && <div>YÃ¼kleniyorâ€¦</div>}
+      {loading && <div>Yükleniyor…</div>}
       {err && <div style={{ color: 'crimson' }}>Hata: {err}</div>}
       {!loading && !err && stages.length === 0 && (
-        <div>HenÃ¼z stage bulunamadÄ±. Seed verileri yÃ¼kleyin.</div>
+        <div>Henüz stage bulunamadı. Seed verileri yükleyin.</div>
       )}
       {!loading && !err && stages.length > 0 && (
         <Kanban
